@@ -9,13 +9,26 @@ A modern **ASP.NET Core 8.0 Web API** that provides a comprehensive web interfac
 
 ## ✨ Features Overview
 
-## Features
+Transform your BIO600 fingerprint scanner into a modern web service! This project provides:
 
-- **Real-time Preview**: WebSocket-based real-time fingerprint preview with proper image processing
-- **REST API**: Complete REST API for all fingerprint operations
-- **Template Generation**: Support for ISO and ANSI template formats
-- **Image Splitting**: Split multi-finger images into individual finger images
-- **Web Interface**: Modern web UI matching the original desktop application functionality
+### 🌐 **Web Interface**
+- **Real-time Preview**: Live fingerprint scanning with WebSocket streaming
+- **Modern UI**: Clean, responsive interface matching professional standards
+- **Multiple Capture Modes**: Single finger, four fingers, two thumbs, roll capture
+- **Quality Assessment**: Real-time quality scoring and finger detection
+
+### 🚀 **REST API**
+- **Device Management**: Initialize, close, status monitoring
+- **Image Capture**: Multiple formats and resolutions
+- **Template Generation**: ISO/ANSI standard formats
+- **Template Comparison**: Fingerprint matching with scoring
+- **Image Processing**: Splitting, enhancement, format conversion
+
+### ⚡ **Real-time Features**
+- **WebSocket Communication**: Instant preview updates
+- **Live Quality Feedback**: Real-time quality assessment
+- **Audio/Visual Feedback**: LED control and beep notifications
+- **Timeout Handling**: Smart capture timeout management
 
 ## Architecture
 
@@ -33,32 +46,51 @@ A modern **ASP.NET Core 8.0 Web API** that provides a comprehensive web interfac
 2. **Canvas Rendering**: Proper fingerprint image display with scaling and processing
 3. **UI Controls**: Complete control interface matching the desktop application
 
-## Prerequisites
+## 🛠️ Prerequisites
 
-- .NET 6.0 or later
-- Windows OS (required for native DLLs)
-- BIO600 fingerprint scanner hardware
-- Native DLLs: `ZAZ_FpStdLib.dll`, `GALSXXYY.dll`, `Gamc.dll`, `FpSplit.dll`
+- **.NET 8.0** or later
+- **Windows OS** (required for native fingerprint DLLs)
+- **BIO600 fingerprint scanner** hardware
+- **Native DLLs**: Included in repository
+  - `ZAZ_FpStdLib.dll` - Template generation
+  - `GALSXXYY.dll` - Image capture
+  - `Gamc.dll` - Image processing  
+  - `FpSplit.dll` - Finger splitting
+  - `ZhiAngCamera.dll` - Camera interface
 
-## Installation
+## 🚀 Quick Start
 
-1. **Copy DLLs**: Ensure all native DLLs from the original application are in the output directory:
-   - `ZAZ_FpStdLib.dll`
-   - `GALSXXYY.dll` 
-   - `Gamc.dll`
-   - `FpSplit.dll`
+### 1. **Clone the Repository**
+```bash
+git clone <your-github-repo-url>
+cd FingerprintWebAPI
+```
 
-2. **Build and Run**:
-   ```bash
-   cd FingerprintWebAPI
-   dotnet restore
-   dotnet build
-   dotnet run
-   ```
+### 2. **Build and Run**
+```bash
+dotnet restore
+dotnet build
+dotnet run
+```
 
-3. **Access the Interface**:
-   - Web UI: `http://localhost:5000`
-   - API Documentation: `http://localhost:5000/swagger`
+### 3. **Access the Application**
+- **Web Interface**: `http://localhost:5000`
+- **API Documentation**: `http://localhost:5000/swagger`
+- **WebSocket Hub**: `ws://localhost:5000/ws/fingerprint`
+
+### 4. **Hardware Setup**
+1. Connect your BIO600 fingerprint scanner
+2. Ensure device drivers are installed
+3. The application will auto-detect and initialize the device
+
+## 📱 **Web Interface Preview**
+
+The web interface provides a complete control panel with:
+- **Real-time fingerprint preview** with quality assessment
+- **Multiple capture modes** (single, multi-finger, roll)
+- **Template generation** and comparison
+- **Image downloading** in multiple formats
+- **Device control** (LED, LCD, audio feedback)
 
 ## API Endpoints
 
