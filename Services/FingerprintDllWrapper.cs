@@ -85,7 +85,7 @@ namespace FingerprintWebAPI.Services
             public int left;
             public int angle;
             public int quality;
-            public byte[] pOutBuf;
+            public IntPtr pOutBuf;  // Changed from byte[] to IntPtr for proper P/Invoke
         }
 
         [DllImport("FpSplit.dll", CallingConvention = CallingConvention.StdCall)]

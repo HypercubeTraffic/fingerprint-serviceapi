@@ -471,7 +471,8 @@ namespace FingerprintWebAPI.Services
                             // Allocate memory for each finger image
                             for (int i = 0; i < 10; i++)
                             {
-                                IntPtr ptr = (IntPtr)((UInt32)infosIntPtr + i * size + 24);
+                                // Calculate correct offset for pOutBuf field (6 ints * 4 bytes = 24 bytes)
+                                IntPtr ptr = IntPtr.Add(infosIntPtr, i * size + 24);
                                 IntPtr p = Marshal.AllocHGlobal(request.SplitWidth * request.SplitHeight);
                                 Marshal.WriteIntPtr(ptr, p);
                             }
@@ -516,7 +517,7 @@ namespace FingerprintWebAPI.Services
                             // Free allocated memory
                             for (int i = 0; i < 10; i++)
                             {
-                                IntPtr ptr = Marshal.ReadIntPtr((IntPtr)((UInt32)infosIntPtr + i * size + 24));
+                                IntPtr ptr = Marshal.ReadIntPtr(IntPtr.Add(infosIntPtr, i * size + 24));
                                 if (ptr != IntPtr.Zero)
                                 {
                                     Marshal.FreeHGlobal(ptr);
@@ -548,11 +549,11 @@ namespace FingerprintWebAPI.Services
                 try
                 {
                     // Read FPSPLIT_INFO structure
-                    IntPtr structPtr = (IntPtr)((UInt32)infosIntPtr + i * size);
+                    IntPtr structPtr = IntPtr.Add(infosIntPtr, i * size);
                     var info = Marshal.PtrToStructure<FingerprintDllWrapper.FPSPLIT_INFO>(structPtr);
 
-                    // Read image data
-                    IntPtr imagePtr = Marshal.ReadIntPtr((IntPtr)((UInt32)infosIntPtr + i * size + 24));
+                    // Read image data from the pOutBuf pointer
+                    IntPtr imagePtr = info.pOutBuf;
                     byte[] rawImageData = new byte[width * height];
                     Marshal.Copy(imagePtr, rawImageData, 0, rawImageData.Length);
 
@@ -591,11 +592,11 @@ namespace FingerprintWebAPI.Services
                 try
                 {
                     // Read FPSPLIT_INFO structure
-                    IntPtr structPtr = (IntPtr)((UInt32)infosIntPtr + i * size);
+                    IntPtr structPtr = IntPtr.Add(infosIntPtr, i * size);
                     var info = Marshal.PtrToStructure<FingerprintDllWrapper.FPSPLIT_INFO>(structPtr);
 
-                    // Read image data
-                    IntPtr imagePtr = Marshal.ReadIntPtr((IntPtr)((UInt32)infosIntPtr + i * size + 24));
+                    // Read image data from the pOutBuf pointer
+                    IntPtr imagePtr = info.pOutBuf;
                     byte[] rawImageData = new byte[width * height];
                     Marshal.Copy(imagePtr, rawImageData, 0, rawImageData.Length);
 
@@ -862,7 +863,7 @@ namespace FingerprintWebAPI.Services
                             {
                                 for (int i = 0; i < 10; i++)
                                 {
-                                    IntPtr ptr = (IntPtr)((UInt32)infosIntPtr + i * size + 24);
+                                    IntPtr ptr = IntPtr.Add(infosIntPtr, i * size + 24);
                                     IntPtr p = Marshal.AllocHGlobal(300 * 400);
                                     Marshal.WriteIntPtr(ptr, p);
                                 }
@@ -897,7 +898,7 @@ namespace FingerprintWebAPI.Services
                                 // Free allocated memory
                                 for (int i = 0; i < 10; i++)
                                 {
-                                    IntPtr ptr = Marshal.ReadIntPtr((IntPtr)((UInt32)infosIntPtr + i * size + 24));
+                                    IntPtr ptr = Marshal.ReadIntPtr(IntPtr.Add(infosIntPtr, i * size + 24));
                                     if (ptr != IntPtr.Zero)
                                         Marshal.FreeHGlobal(ptr);
                                 }

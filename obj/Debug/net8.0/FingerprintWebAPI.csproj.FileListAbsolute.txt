@@ -1,5 +1,6 @@
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/appsettings.Development.json
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/appsettings.json
+/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/BIO600-Fingerprint-API.postman_collection.json
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/FpSplit.dll
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/GALSXXYY.dll
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/GAMC.dll
@@ -50,6 +51,7 @@
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/obj/Debug/net8.0/FingerprintWebAPI.csproj.CoreCompileInputs.cache
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/obj/Debug/net8.0/FingerprintWebAPI.MvcApplicationPartsAssemblyInfo.cs
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/obj/Debug/net8.0/FingerprintWebAPI.MvcApplicationPartsAssemblyInfo.cache
+/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/obj/Debug/net8.0/FingerprintWebAPI.sourcelink.json
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/obj/Debug/net8.0/staticwebassets.build.json
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/obj/Debug/net8.0/staticwebassets.development.json
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/obj/Debug/net8.0/staticwebassets/msbuild.FingerprintWebAPI.Microsoft.AspNetCore.StaticWebAssets.props
