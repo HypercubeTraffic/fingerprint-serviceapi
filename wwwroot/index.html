@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 BIO600 Fingerprint Real-Time Preview System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5dc;
+            min-height: 100vh;
+            color: #000;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #f5f5dc;
+            border: 1px solid #d0d0d0;
+            padding: 20px;
+        }
+        
+        .header {
+            background: #f5f5dc;
+            color: #000;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #d0d0d0;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: normal;
+            color: #000;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 14px;
+            color: #000;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .preview-section {
+            background: #f5f5dc;
+            border: 1px solid #d0d0d0;
+            padding: 20px;
+        }
+        
+        .preview-container {
+            position: relative;
+            background: #f5f5dc;
+            border: 1px solid #d0d0d0;
+            margin-bottom: 20px;
+        }
+        
+        #previewCanvas {
+            width: 640px;
+            height: 600px;
+            display: block;
+            background: #ffffff;
+            border: 1px solid #d0d0d0;
+            margin: 0 auto;
+        }
+        
+        .preview-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(245, 245, 220, 0.9);
+            color: #000;
+            padding: 10px;
+            border: 1px solid #d0d0d0;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+        
+        .preview-overlay div {
+            margin: 3px 0;
+        }
+        
+        .controls-section {
+            background: #f5f5dc;
+            border: 1px solid #d0d0d0;
+            padding: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .control-group input, .control-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .control-group input:focus, .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #d0d0d0;
+            background: #f5f5dc;
+            color: #000;
+            font-size: 12px;
+            font-weight: normal;
+            cursor: pointer;
+            margin: 2px;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .status-section {
+            background: #f5f5dc;
+            border: 1px solid #d0d0d0;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .status-value {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-running {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-stopped {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .quality-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        .quality-excellent { background: #28a745; }
+        .quality-good { background: #ffc107; }
+        .quality-poor { background: #dc3545; }
+        .quality-none { background: #6c757d; }
+        
+        .fps-counter {
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            color: #00ff88;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0,255,136,0.8);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 1.5s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        
+        .status-connected .status-indicator {
+            background: #00ff88;
+            box-shadow: 0 0 10px rgba(0,255,136,0.5);
+        }
+        
+        .status-disconnected .status-indicator {
+            background: #ff416c;
+            box-shadow: 0 0 10px rgba(255,65,108,0.5);
+        }
+        
+        .status-running .status-indicator {
+            background: #00b09b;
+            box-shadow: 0 0 10px rgba(0,176,155,0.5);
+        }
+        
+        .status-stopped .status-indicator {
+            background: #ffc107;
+            box-shadow: 0 0 10px rgba(255,193,7,0.5);
+        }
+        
+        .log-section {
+            background: #2c3e50;
+            color: #ecf0f1;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        
+        .log-info { background: rgba(52, 152, 219, 0.2); }
+        .log-success { background: rgba(46, 204, 113, 0.2); }
+        .log-warning { background: rgba(241, 196, 15, 0.2); }
+        .log-error { background: rgba(231, 76, 60, 0.2); }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>BIO600 Fingerprint Preview</h1>
+        <p>Real-time fingerprint capture and preview system</p>
+    </div>
+
+    <div class="main-content">
+        <div class="preview-section">
+            <div class="preview-container">
+                <canvas id="previewCanvas" width="640" height="600"></canvas>
+                <div class="preview-overlay">
+                    <div>FPS: <span id="fpsCounter" class="fps-counter">0</span></div>
+                    <div>Quality: <span id="qualityValue">0</span><span id="qualityIndicator" class="quality-indicator quality-none"></span></div>
+                    <div>Size: <span id="imageSize">0x0</span></div>
+                    <div>Finger: <span id="fingerStatus">Not Detected</span></div>
+                    <div id="qualityMessage" style="font-size: 11px; color: #000; margin-top: 5px; max-width: 200px;">Ready</div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button id="startPreviewBtn" class="btn">Start Preview</button>
+                <button id="stopPreviewBtn" class="btn" disabled>Stop Preview</button>
+                <button id="captureBtn" class="btn" disabled>Save Image</button>
+                
+                <!-- MISSING BUTTONS FROM ORIGINAL SAMPLE CODE -->
+                <button id="captureRollBtn" class="btn" disabled>Capture Roll Fingerprint</button>
+                <button id="captureSingleBtn" class="btn" disabled>Capture Single Finger</button>
+                
+                <!-- Template buttons -->
+                <button id="captureISOBtn" class="btn" disabled>Capture ISO Template</button>
+                <button id="captureANSIBtn" class="btn" disabled>Capture ANSI Template</button>
+                <button id="captureBothBtn" class="btn" disabled>Capture Both Templates</button>
+                <button id="compareTemplatesBtn" class="btn" disabled>Compare Templates</button>
+                
+                <!-- Finger type buttons -->
+                <button id="captureLeftFourBtn" class="btn" disabled>Capture Left Four Fingers</button>
+                <button id="captureRightFourBtn" class="btn" disabled>Capture Right Four Fingers</button>
+                <button id="captureTwoThumbsBtn" class="btn" disabled>Capture Two Thumbs</button>
+                
+                <!-- Split buttons -->
+                <button id="splitTwoThumbsBtn" class="btn" disabled>Split Two Thumbs</button>
+                <button id="splitFourRightBtn" class="btn" disabled>Split Four Right Fingers</button>
+                
+                <!-- Device control buttons -->
+                <button id="playBeepBtn" class="btn" disabled>Play Beep</button>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="control-group">
+                <label for="channelSelect">Channel:</label>
+                <select id="channelSelect">
+                    <option value="0">Channel 0</option>
+                    <option value="1">Channel 1</option>
+                    <option value="2">Channel 2</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="widthInput">Width:</label>
+                <input type="number" id="widthInput" value="1600" min="100" max="2000">
+            </div>
+
+            <div class="control-group">
+                <label for="heightInput">Height:</label>
+                <input type="number" id="heightInput" value="1500" min="100" max="2000">
+            </div>
+
+            <div class="control-group">
+                <label for="splitWidthInput">Split Width:</label>
+                <input type="number" id="splitWidthInput" value="300" min="100" max="500">
+            </div>
+
+            <div class="control-group">
+                <label for="splitHeightInput">Split Height:</label>
+                <input type="number" id="splitHeightInput" value="400" min="100" max="600">
+            </div>
+
+            <div class="control-group">
+                <label for="templateFormatSelect">Template Format:</label>
+                <select id="templateFormatSelect">
+                    <option value="ISO">ISO/IEC 19794-2</option>
+                    <option value="ANSI">ANSI/NIST-ITL 1-2000</option>
+                    <option value="BOTH">Both Formats</option>
+                </select>
+            </div>
+
+            <!-- NEW MISSING CONTROLS FROM ORIGINAL SAMPLE CODE -->
+            <div class="control-group">
+                <label for="fingerTypeSelect">Finger Type:</label>
+                <select id="fingerTypeSelect">
+                    <option value="Normal">Normal</option>
+                    <option value="Dry">Dry</option>
+                    <option value="Wet">Wet</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="rollWidthInput">Roll Width:</label>
+                <input type="number" id="rollWidthInput" value="800" min="100" max="1000">
+            </div>
+
+            <div class="control-group">
+                <label for="rollHeightInput">Roll Height:</label>
+                <input type="number" id="rollHeightInput" value="750" min="100" max="1000">
+            </div>
+
+            <div class="status-section">
+                <div class="status-item">
+                    <span class="status-label">Connection:</span>
+                    <span id="connectionStatus" class="status-value status-disconnected">Disconnected</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Preview:</span>
+                    <span id="previewStatus" class="status-value status-stopped">Stopped</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Device:</span>
+                    <span id="deviceStatus" class="status-value status-disconnected">Unknown</span>
+                </div>
+            </div>
+
+            <div class="template-section" style="margin-top: 15px; padding: 15px; background: #f5f5dc; border: 1px solid #d0d0d0;">
+                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Template Information</h4>
+                <div id="templateInfo" style="font-size: 12px; color: #666;">
+                    <div>Format: <span id="templateFormat">None</span></div>
+                    <div>Size: <span id="templateSize">0 bytes</span></div>
+                    <div>Quality: <span id="templateQuality">0</span></div>
+                    <div>Status: <span id="templateStatus">Ready</span></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button id="downloadTemplateBtn" class="btn" disabled style="width: 100%; font-size: 11px;">Download Template</button>
+                </div>
+            </div>
+
+            <div class="split-thumbs-section" style="margin-top: 15px; padding: 15px; background: #f5f5dc; border: 1px solid #d0d0d0;">
+                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Two Thumbs Split Results</h4>
+                <div id="splitThumbsInfo" style="font-size: 12px; color: #666;">
+                    <div>Thumb Count: <span id="splitThumbCount">0</span></div>
+                    <div>Split Size: <span id="splitThumbSize">300x400</span></div>
+                    <div>Status: <span id="splitThumbStatus">Ready</span></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button id="downloadSplitThumbsBtn" class="btn" disabled style="width: 100%; font-size: 11px;">Download Thumb Images</button>
+                </div>
+            </div>
+
+            <div class="split-section" style="margin-top: 15px; padding: 15px; background: #f5f5dc; border: 1px solid #d0d0d0;">
+                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Four Right Fingers Split Results</h4>
+                <div id="splitInfo" style="font-size: 12px; color: #666;">
+                    <div>Finger Count: <span id="splitFingerCount">0</span></div>
+                    <div>Split Size: <span id="splitSize">300x400</span></div>
+                    <div>Status: <span id="splitStatus">Ready</span></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button id="downloadSplitBtn" class="btn" disabled style="width: 100%; font-size: 11px;">Download Split Images</button>
+                </div>
+            </div>
+
+            <!-- NEW TEMPLATE COMPARISON SECTION FROM ORIGINAL SAMPLE CODE -->
+            <div class="comparison-section" style="margin-top: 15px; padding: 15px; background: #f5f5dc; border: 1px solid #d0d0d0;">
+                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Template Comparison</h4>
+                <div id="comparisonInfo" style="font-size: 12px; color: #666;">
+                    <div>Template 1: <span id="template1Status">Not Set</span></div>
+                    <div>Template 2: <span id="template2Status">Not Set</span></div>
+                    <div>Match Score: <span id="matchScore">0</span></div>
+                    <div>Result: <span id="matchResult">Ready</span></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button id="storeTemplate1Btn" class="btn" disabled style="width: 48%; font-size: 11px; margin-right: 2%;">Store Template 1</button>
+                    <button id="storeTemplate2Btn" class="btn" disabled style="width: 48%; font-size: 11px;">Store Template 2</button>
+                </div>
+            </div>
+
+            <!-- ROLL FINGERPRINT SECTION -->
+            <div class="roll-section" style="margin-top: 15px; padding: 15px; background: #f5f5dc; border: 1px solid #d0d0d0;">
+                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Roll Fingerprint Results</h4>
+                <div id="rollInfo" style="font-size: 12px; color: #666;">
+                    <div>Size: <span id="rollSize">800x750</span></div>
+                    <div>Quality: <span id="rollQuality">0</span></div>
+                    <div>Status: <span id="rollStatus">Ready</span></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button id="downloadRollBtn" class="btn" disabled style="width: 100%; font-size: 11px;">Download Roll Image</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="log-section">
+        <h3 style="margin-top: 0;">System Log</h3>
+        <div id="logContainer"></div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

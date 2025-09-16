@@ -1,0 +1,29 @@
+{
+  "Files": [
+    {
+      "Id": "/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/wwwroot/app.js",
+      "PackagePath": "staticwebassets/app.js"
+    },
+    {
+      "Id": "/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/wwwroot/index.html",
+      "PackagePath": "staticwebassets/index.html"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.FingerprintWebAPI.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.build.FingerprintWebAPI.props",
+      "PackagePath": "build\\FingerprintWebAPI.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildMultiTargeting.FingerprintWebAPI.props",
+      "PackagePath": "buildMultiTargeting\\FingerprintWebAPI.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.FingerprintWebAPI.props",
+      "PackagePath": "buildTransitive\\FingerprintWebAPI.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

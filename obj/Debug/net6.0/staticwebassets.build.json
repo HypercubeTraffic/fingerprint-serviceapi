@@ -1,0 +1,58 @@
+{
+  "Version": 1,
+  "Hash": "FyX4vufIcfzSAXFRC3v2/oAORm5lcTwFvpRGz8hpwtw=",
+  "Source": "FingerprintWebAPI",
+  "BasePath": "_content/FingerprintWebAPI",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "FingerprintWebAPI/wwwroot",
+      "Source": "FingerprintWebAPI",
+      "ContentRoot": "/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/wwwroot/",
+      "BasePath": "_content/FingerprintWebAPI",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/wwwroot/app.js",
+      "SourceId": "FingerprintWebAPI",
+      "SourceType": "Discovered",
+      "ContentRoot": "/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/wwwroot/",
+      "BasePath": "_content/FingerprintWebAPI",
+      "RelativePath": "app.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/app.js"
+    },
+    {
+      "Identity": "/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/wwwroot/index.html",
+      "SourceId": "FingerprintWebAPI",
+      "SourceType": "Discovered",
+      "ContentRoot": "/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/wwwroot/",
+      "BasePath": "_content/FingerprintWebAPI",
+      "RelativePath": "index.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/index.html"
+    }
+  ]
+}
