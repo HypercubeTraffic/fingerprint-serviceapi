@@ -278,6 +278,27 @@
               "path": ["api", "fingerprint", "capture", "finger-type"]
             }
           }
+        },
+        {
+          "name": "Capture Two Thumbs (Direct)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/capture/two-thumbs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "capture", "two-thumbs"]
+            }
+          }
         }
       ]
     },

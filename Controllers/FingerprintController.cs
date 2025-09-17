@@ -371,5 +371,36 @@ namespace FingerprintWebAPI.Controllers
                 return StatusCode(500, $"Error clearing stored templates: {ex.Message}");
             }
         }
+
+        // NEW: DEDICATED TWO THUMBS CAPTURE ENDPOINT
+
+        /// <summary>
+        /// Capture two thumbs specifically (like btn_twofp in original Sample Code)
+        /// </summary>
+        [HttpPost("capture/two-thumbs")]
+        public async Task<ActionResult<FingerTypeResponse>> CaptureTwoThumbs([FromBody] CaptureRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Two thumbs capture request: {Width}x{Height} on channel {Channel}", 
+                    request.Width, request.Height, request.Channel);
+                
+                var fingerTypeRequest = new FingerTypeRequest
+                {
+                    FingerType = 3, // Type 3 = Two thumbs
+                    Channel = request.Channel,
+                    Width = request.Width,
+                    Height = request.Height
+                };
+
+                var result = await _fingerprintService.CaptureFingerTypeAsync(fingerTypeRequest);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing two thumbs");
+                return StatusCode(500, $"Error capturing two thumbs: {ex.Message}");
+            }
+        }
     }
 }

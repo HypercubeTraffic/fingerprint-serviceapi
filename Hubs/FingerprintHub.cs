@@ -128,6 +128,10 @@ namespace FingerprintWebAPI.Hubs
                         await HandleSetDryWet(command);
                         break;
 
+                    case "capture_two_thumbs":
+                        await HandleCaptureTwoThumbs(command);
+                        break;
+
                     default:
                         await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
                         {
@@ -549,6 +553,45 @@ namespace FingerprintWebAPI.Hubs
                 {
                     Type = "error",
                     Data = new { message = $"Error setting dry/wet level: {ex.Message}" }
+                });
+            }
+        }
+
+        private async Task HandleCaptureTwoThumbs(dynamic command)
+        {
+            try
+            {
+                var request = new CaptureRequest
+                {
+                    Channel = command?.channel ?? 0,
+                    Width = command?.width ?? 1600,
+                    Height = command?.height ?? 1500
+                };
+
+                // Convert to FingerTypeRequest for two thumbs (type 3)
+                var fingerTypeRequest = new FingerTypeRequest
+                {
+                    FingerType = 3, // Type 3 = Two thumbs
+                    Channel = request.Channel,
+                    Width = request.Width,
+                    Height = request.Height
+                };
+
+                var result = await _fingerprintService.CaptureFingerTypeAsync(fingerTypeRequest);
+
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "two_thumbs_capture_result",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing two thumbs");
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "error",
+                    Data = new { message = $"Error capturing two thumbs: {ex.Message}" }
                 });
             }
         }

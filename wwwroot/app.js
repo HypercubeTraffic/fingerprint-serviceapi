@@ -41,6 +41,7 @@ class FingerprintPreview {
         this.captureLeftFourBtn = document.getElementById('captureLeftFourBtn');
         this.captureRightFourBtn = document.getElementById('captureRightFourBtn');
         this.captureTwoThumbsBtn = document.getElementById('captureTwoThumbsBtn');
+        this.captureTwoThumbsDirectBtn = document.getElementById('captureTwoThumbsDirectBtn');
         this.playBeepBtn = document.getElementById('playBeepBtn');
         this.storeTemplate1Btn = document.getElementById('storeTemplate1Btn');
         this.storeTemplate2Btn = document.getElementById('storeTemplate2Btn');
@@ -114,6 +115,7 @@ class FingerprintPreview {
         this.captureLeftFourBtn.addEventListener('click', () => this.captureFingerType(1));
         this.captureRightFourBtn.addEventListener('click', () => this.captureFingerType(2));
         this.captureTwoThumbsBtn.addEventListener('click', () => this.captureFingerType(3));
+        this.captureTwoThumbsDirectBtn.addEventListener('click', () => this.captureTwoThumbsDirect());
         this.playBeepBtn.addEventListener('click', () => this.playBeep());
         this.storeTemplate1Btn.addEventListener('click', () => this.storeTemplate(1));
         this.storeTemplate2Btn.addEventListener('click', () => this.storeTemplate(2));
@@ -213,6 +215,7 @@ class FingerprintPreview {
                 this.captureLeftFourBtn.disabled = false;
                 this.captureRightFourBtn.disabled = false;
                 this.captureTwoThumbsBtn.disabled = false;
+                this.captureTwoThumbsDirectBtn.disabled = false;
                 this.playBeepBtn.disabled = false;
                 break;
 
@@ -234,6 +237,7 @@ class FingerprintPreview {
                 this.captureLeftFourBtn.disabled = true;
                 this.captureRightFourBtn.disabled = true;
                 this.captureTwoThumbsBtn.disabled = true;
+                this.captureTwoThumbsDirectBtn.disabled = true;
                 this.playBeepBtn.disabled = true;
                 break;
 
@@ -272,6 +276,10 @@ class FingerprintPreview {
 
                 case 'finger_type_result':
                     this.handleFingerTypeResult(data);
+                    break;
+
+                case 'two_thumbs_capture_result':
+                    this.handleTwoThumbsCaptureResult(data);
                     break;
 
             case 'status':
@@ -923,6 +931,43 @@ class FingerprintPreview {
             }
         } else {
             this.log(`Finger type capture failed: ${data.message}`, 'error');
+        }
+    }
+
+    handleTwoThumbsCaptureResult(data) {
+        if (data.success) {
+            this.log(`Two thumbs captured successfully: ${data.detectedFingerCount} thumbs, Quality ${data.quality}`, 'success');
+            
+            if (data.imageData) {
+                this.downloadImage(data.imageData, `two_thumbs_${Date.now()}.bmp`);
+            }
+            
+            // Play success sound (like original Sample Code)
+            this.playBeep();
+        } else {
+            this.log(`Two thumbs capture failed: ${data.message}`, 'error');
+        }
+    }
+
+    async captureTwoThumbsDirect() {
+        if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+            this.log('SignalR not connected', 'error');
+            return;
+        }
+
+        this.log('Capturing two thumbs directly...', 'info');
+
+        const message = {
+            command: 'capture_two_thumbs',
+            channel: parseInt(this.channelSelect.value),
+            width: parseInt(this.widthInput.value),
+            height: parseInt(this.heightInput.value)
+        };
+
+        try {
+            await this.connection.invoke("SendMessage", JSON.stringify(message));
+        } catch (err) {
+            this.log('Error capturing two thumbs: ' + err, 'error');
         }
     }
 
