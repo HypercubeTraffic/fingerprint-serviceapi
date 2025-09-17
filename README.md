@@ -5,7 +5,8 @@ A modern **ASP.NET Core 8.0 Web API** that provides a comprehensive web interfac
 ![.NET 8.0](https://img.shields.io/badge/.NET-8.0-blue)
 ![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-8.0-purple)
 ![SignalR](https://img.shields.io/badge/SignalR-WebSocket-green)
-![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
+![Platform](https://img.shields.io/badge/Platform-Windows%20x64%20ONLY-red)
+![Architecture](https://img.shields.io/badge/Architecture-64--bit-important)
 
 ## ✨ Features Overview
 
@@ -48,15 +49,21 @@ Transform your BIO600 fingerprint scanner into a modern web service! This projec
 
 ## 🛠️ Prerequisites
 
-- **.NET 8.0** or later
-- **Windows OS** (required for native fingerprint DLLs)
-- **BIO600 fingerprint scanner** hardware
-- **Native DLLs**: Included in repository
-  - `ZAZ_FpStdLib.dll` - Template generation
-  - `GALSXXYY.dll` - Image capture
-  - `Gamc.dll` - Image processing  
-  - `FpSplit.dll` - Finger splitting
-  - `ZhiAngCamera.dll` - Camera interface
+⚠️ **CRITICAL: Windows x64 ONLY** ⚠️
+
+- **.NET 8.0 x64** runtime or later
+- **Windows 10/11 x64** operating system (32-bit NOT supported)
+- **BIO600 fingerprint scanner** hardware with drivers installed
+- **64-bit Native DLLs**: Included in repository
+  - `ZAZ_FpStdLib.dll` (1MB) - Template generation
+  - `GALSXXYY.dll` (3.7MB) - Image capture
+  - `GAMC.dll` (86KB) - Image processing  
+  - `FpSplit.dll` (83KB) - Finger splitting
+  - `Fione.dll` (2.1MB) - Image enhancement
+  - `ZhiAngCamera.dll` (1MB) - Camera interface
+  - `Hos_Interface.dll` (28KB) - Hardware interface
+  - `imagecut.dll` (23KB) - Image processing
+  - `opencv_world*.dll` (105MB) - Computer vision
 
 ## 🚀 Quick Start
 
@@ -82,6 +89,15 @@ dotnet run
 1. Connect your BIO600 fingerprint scanner
 2. Ensure device drivers are installed
 3. The application will auto-detect and initialize the device
+
+### ⚠️ **Architecture Requirements**
+- **Windows x64 ONLY**: This application will NOT work on:
+  - ❌ Linux systems
+  - ❌ macOS systems  
+  - ❌ Windows x86 (32-bit)
+  - ❌ ARM processors
+- **64-bit DLLs**: All native libraries are compiled for x64 architecture
+- **Memory Management**: Uses 64-bit pointer arithmetic for proper operation
 
 ## 📱 **Web Interface Preview**
 

@@ -1,5 +1,10 @@
 @echo off
-echo Starting BIO600 Fingerprint Web API...
+echo Starting BIO600 Fingerprint Web API (x64 Windows Only)...
+echo.
+echo REQUIREMENTS:
+echo - Windows x64 operating system
+echo - .NET 8.0 x64 runtime
+echo - BIO600 fingerprint scanner with drivers
 echo.
 
 REM Check if DLLs exist
