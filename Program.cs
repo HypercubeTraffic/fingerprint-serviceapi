@@ -45,6 +45,7 @@ try
     // Register custom services
     builder.Services.AddSingleton<IFingerprintService, FingerprintService>();
     builder.Services.AddSingleton<IPreviewService, PreviewService>();
+    builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
 
     var app = builder.Build();
 

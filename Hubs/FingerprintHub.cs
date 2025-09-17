@@ -10,20 +10,22 @@ namespace FingerprintWebAPI.Hubs
         private readonly ILogger<FingerprintHub> _logger;
         private readonly IFingerprintService _fingerprintService;
         private readonly IPreviewService _previewService;
+        private readonly IWebSocketService _webSocketService;
 
-        public FingerprintHub(ILogger<FingerprintHub> logger, IFingerprintService fingerprintService, IPreviewService previewService)
+        public FingerprintHub(ILogger<FingerprintHub> logger, IFingerprintService fingerprintService, IPreviewService previewService, IWebSocketService webSocketService)
         {
             _logger = logger;
             _fingerprintService = fingerprintService;
             _previewService = previewService;
+            _webSocketService = webSocketService;
         }
 
         public override async Task OnConnectedAsync()
         {
             _logger.LogInformation("Client connected: {ConnectionId}", Context.ConnectionId);
             
-            // Subscribe to preview data events
-            _previewService.PreviewDataReceived += OnPreviewDataReceived;
+            // Register connection with WebSocket service
+            _webSocketService.RegisterConnection(Context.ConnectionId);
             
             // Send connection confirmation
             await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
@@ -47,11 +49,11 @@ namespace FingerprintWebAPI.Hubs
         {
             _logger.LogInformation("Client disconnected: {ConnectionId}", Context.ConnectionId);
             
-            // Unsubscribe from preview data events
-            _previewService.PreviewDataReceived -= OnPreviewDataReceived;
+            // Unregister connection from WebSocket service
+            _webSocketService.UnregisterConnection(Context.ConnectionId);
             
-            // Stop preview if no more clients
-            if (Clients.All == null)
+            // Stop preview if no more active connections
+            if (!_webSocketService.HasActiveConnections)
             {
                 await _previewService.StopPreviewAsync();
             }
@@ -551,20 +553,6 @@ namespace FingerprintWebAPI.Hubs
             }
         }
 
-        private async void OnPreviewDataReceived(object? sender, FingerprintPreviewData previewData)
-        {
-            try
-            {
-                await Clients.All.SendAsync("ReceiveMessage", new WebSocketMessage
-                {
-                    Type = "preview",
-                    Data = previewData
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending preview data to clients");
-            }
-        }
+        // Removed OnPreviewDataReceived - now using direct WebSocket service calls to avoid disposal issues
     }
 }

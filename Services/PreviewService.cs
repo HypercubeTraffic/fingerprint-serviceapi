@@ -7,6 +7,7 @@ namespace FingerprintWebAPI.Services
     {
         private readonly ILogger<PreviewService> _logger;
         private readonly IFingerprintService _fingerprintService;
+        private readonly IWebSocketService _webSocketService;
         private CancellationTokenSource? _cancellationTokenSource;
         private Task? _previewTask;
         private bool _isPreviewRunning = false;
@@ -19,10 +20,11 @@ namespace FingerprintWebAPI.Services
         public bool IsPreviewRunning => _isPreviewRunning;
         public event EventHandler<FingerprintPreviewData>? PreviewDataReceived;
 
-        public PreviewService(ILogger<PreviewService> logger, IFingerprintService fingerprintService)
+        public PreviewService(ILogger<PreviewService> logger, IFingerprintService fingerprintService, IWebSocketService webSocketService)
         {
             _logger = logger;
             _fingerprintService = fingerprintService;
+            _webSocketService = webSocketService;
         }
 
         public Task<bool> StartPreviewAsync(int channel, int width, int height)
@@ -158,7 +160,10 @@ namespace FingerprintWebAPI.Services
                                 Fps = _currentFps
                             };
 
-                            // Raise event for WebSocket transmission
+                            // Send directly through WebSocket service to avoid disposal issues
+                            await _webSocketService.SendPreviewDataAsync(previewData);
+                            
+                            // Also raise event for any other subscribers
                             PreviewDataReceived?.Invoke(this, previewData);
                         }
 
