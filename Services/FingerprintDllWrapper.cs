@@ -200,6 +200,12 @@ namespace FingerprintWebAPI.Services
             public byte[] pOutBuf;
         }
 
+        [DllImport("FpSplit.dll")]
+        public static extern int FPSPLIT_Init(int nImgW, int nImgH, int nPreview);
+        
+        [DllImport("FpSplit.dll")]
+        public static extern void FPSPLIT_Uninit();
+
         [DllImport("FpSplit.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern int FPSPLIT_DoSplit(byte[] pImgBuf, int nImgW, int nImgH, int nPreview,
             int nSplitW, int nSplitH, ref int pnFpNum, IntPtr pInfo);

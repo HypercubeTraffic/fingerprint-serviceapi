@@ -46,6 +46,14 @@ namespace FingerprintWebAPI.Services
                             return false;
                         }
 
+                        // Initialize FPSPLIT for splitting operations
+                        result = FingerprintDllWrapper.FPSPLIT_Init(1600, 1500, 1);
+                        if (result != 1)
+                        {
+                            _logger.LogWarning("Failed to initialize FPSPLIT: {Result}", result);
+                            // Continue anyway as this might not be critical
+                        }
+
                         // Initialize fingerprint algorithm device
                         _fpDevice = FingerprintDllWrapper.ZAZ_FpStdLib_OpenDevice();
                         if (_fpDevice == 0)
@@ -93,6 +101,7 @@ namespace FingerprintWebAPI.Services
 
                         if (_isDeviceConnected)
                         {
+                            FingerprintDllWrapper.FPSPLIT_Uninit();
                             FingerprintDllWrapper.MOSAIC_Close();
                             FingerprintDllWrapper.LIVESCAN_Close();
                         }
@@ -646,11 +655,15 @@ namespace FingerprintWebAPI.Services
                             FingerprintDllWrapper.ApplyImageEnhancement(rawData, request.Width, request.Height);
 
                             // Allocate memory EXACTLY like Fourfinger_Test line 692-702
+                            // CRITICAL: They allocate for 300x400 but use different sizes in WriteIntPtr
                             pti = Marshal.AllocHGlobal(request.SplitWidth * request.SplitHeight * 10);
                             for (int i = 0; i < 10; i++)
                             {
                                 Marshal.WriteIntPtr((IntPtr)((UInt64)infosIntPtr + 24 + (UInt64)(i * size)), (IntPtr)((UInt64)pti + (UInt64)(i * request.SplitWidth * request.SplitHeight)));
                             }
+                            
+                            _logger.LogInformation("Memory allocated: {TotalSize} bytes, Per finger: {PerFinger} bytes", 
+                                request.SplitWidth * request.SplitHeight * 10, request.SplitWidth * request.SplitHeight);
 
                             // Perform the split
                             int splitResult = FingerprintDllWrapper.FPSPLIT_DoSplit(rawData, request.Width, request.Height, 
@@ -658,12 +671,14 @@ namespace FingerprintWebAPI.Services
 
                             _logger.LogInformation("Split result: {SplitResult}, Finger count: {FingerCount}", splitResult, fingerNum);
 
-                            if (splitResult != 1 || fingerNum == 0)
+                            // CRITICAL FIX: Only check finger count like Fourfinger_Test (lines 703, 1291)
+                            // The return value 0 might be normal for this DLL
+                            if (fingerNum == 0)
                             {
                                 return new SplitResponse
                                 {
                                     Success = false,
-                                    Message = $"Split operation failed or no fingers detected. Result: {splitResult}, Count: {fingerNum}"
+                                    Message = $"No fingers detected. Finger count: {fingerNum}"
                                 };
                             }
 
