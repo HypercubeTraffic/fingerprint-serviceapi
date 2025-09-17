@@ -144,8 +144,8 @@ namespace FingerprintWebAPI.Services
                         // Only send frames with valid quality or for debugging purposes
                         if (quality >= -10) // Allow some negative values for debugging
                         {
-                            // Apply vertical flip (critical for proper display)
-                            FingerprintDllWrapper.FlipImageVertically(rawData, _currentWidth, _currentHeight);
+                            // Note: Removed vertical flip to test if it's causing upside-down display
+                            // FingerprintDllWrapper.FlipImageVertically(rawData, _currentWidth, _currentHeight);
 
                             // Convert to base64 for web transmission (raw data, not BMP)
                             string base64Data = Convert.ToBase64String(rawData, 0, _currentWidth * _currentHeight);

@@ -179,10 +179,10 @@ Key settings in `appsettings.json`:
 
 The application implements the same image processing logic as the original desktop application:
 
-1. **Vertical Flip**: Critical vertical flip applied to match the original display
+1. **Image Orientation**: Preview images are displayed in correct orientation (vertical flip removed from preview to fix upside-down display)
 2. **Quality Assessment**: Real-time quality scoring and finger detection
 3. **Scaling**: Proper aspect ratio preservation for web display
-4. **Format Conversion**: BMP header generation for image downloads
+4. **Format Conversion**: BMP header generation for image downloads (vertical flip still applied for saved images)
 
 ## Quality Thresholds
 

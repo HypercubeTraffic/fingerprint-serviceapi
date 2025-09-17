@@ -2,7 +2,7 @@
 // Improved to match Sample Code quality and functionality
 // Key improvements:
 // - Fixed canvas dimensions (640x600) to match fingerprint aspect ratio (16:15)
-// - Implemented vertical flip (critical for proper display)
+// - Removed backend vertical flip to fix upside-down display issue
 // - Simplified image processing to match C# Sample Code approach
 // - Better scaling and aspect ratio handling
 // - Professional quality display matching the original application
