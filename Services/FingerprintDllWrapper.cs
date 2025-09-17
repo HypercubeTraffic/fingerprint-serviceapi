@@ -9,21 +9,55 @@ namespace FingerprintWebAPI.Services
     /// </summary>
     public static class FingerprintDllWrapper
     {
-        // ZAZ_FpStdLib.dll functions
+        // ZAZ_FpStdLib.dll functions - FIXED FOR 64-BIT
         [DllImport("ZAZ_FpStdLib.dll")]
-        public static extern int ZAZ_FpStdLib_OpenDevice();
+        public static extern long ZAZ_FpStdLib_OpenDevice();
         
         [DllImport("ZAZ_FpStdLib.dll")]
-        public static extern void ZAZ_FpStdLib_CloseDevice(int device);
+        public static extern void ZAZ_FpStdLib_CloseDevice(long device);
         
         [DllImport("ZAZ_FpStdLib.dll")]
-        public static extern int ZAZ_FpStdLib_CreateISOTemplate(int device, byte[] image, byte[] itemplate);
+        public static extern int ZAZ_FpStdLib_CreateISOTemplate(long device, byte[] image, byte[] itemplate);
         
         [DllImport("ZAZ_FpStdLib.dll")]
-        public static extern int ZAZ_FpStdLib_CreateANSITemplate(int device, byte[] image, byte[] itemplate);
+        public static extern int ZAZ_FpStdLib_CreateANSITemplate(long device, byte[] image, byte[] itemplate);
         
         [DllImport("ZAZ_FpStdLib.dll")]
-        public static extern int ZAZ_FpStdLib_CompareTemplates(int device, byte[] sTemplate, byte[] fTemplate);
+        public static extern int ZAZ_FpStdLib_CompareTemplates(long device, byte[] sTemplate, byte[] fTemplate);
+        
+        // MISSING FUNCTIONS FROM FOURFINGER_TEST
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_Calibration(long device);
+        
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_GetImage(long device, byte[] image);
+        
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_IsFinger(long device, byte[] image);
+        
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_GetImageQuality(long device, byte[] image);
+        
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_GetNFIQuality(long device, byte[] image);
+        
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_SearchingANSITemplates(long device, byte[] sTemplate, int arrayCnt, byte[] fTemplateArray, int matchedScoreTh);
+        
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_SearchingISOTemplates(long device, byte[] sTemplate, int arrayCnt, byte[] fTemplateArray, int matchedScoreTh);
+        
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_CompressToWSQImage(long device, byte[] rawImage, byte[] wsqImage);
+        
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_UnCompressFromWSQImage(long device, byte[] wsqImage, int wsqSize, byte[] rawImage);
+        
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_GetANSIImageRecord(long device, byte[] image, byte[] itemplate);
+        
+        [DllImport("ZAZ_FpStdLib.dll")]
+        public static extern int ZAZ_FpStdLib_GetISOImageRecord(long device, byte[] image, byte[] itemplate);
 
         // GALSXXYY.dll functions
         [DllImport("GALSXXYY.dll")]
@@ -53,6 +87,40 @@ namespace FingerprintWebAPI.Services
         [DllImport("GALSXXYY.dll")]
         public static extern int LIVESCAN_SetFingerDryWet(int nLevel);
 
+        // MISSING LIVESCAN FUNCTIONS FROM FOURFINGER_TEST
+        [DllImport("GALSXXYY.dll")]
+        public static extern int LIVESCAN_GetSrcFPRawData(int nChannel, byte[] pRawData);
+        
+        [DllImport("GALSXXYY.dll")]
+        public static extern int LIVESCAN_GetRollFPRawData(byte[] pRawData, int width, int height);
+        
+        [DllImport("GALSXXYY.dll")]
+        public static extern int LIVESCAN_GetFlatFPRawData(byte[] pRawData, int width, int height);
+        
+        [DllImport("GALSXXYY.dll")]
+        public static extern int LIVESCAN_DistortionCorrection(byte[] pRawData, int width, int height, byte[] a);
+        
+        [DllImport("GALSXXYY.dll")]
+        public static extern int LIVESCAN_GetFingerArea(byte[] img, int width, int height);
+        
+        [DllImport("GALSXXYY.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int LIVESCAN_GetPreviewImageSize();
+        
+        [DllImport("GALSXXYY.dll")]
+        public static extern int LIVESCAN_GetPreviewData(int nChannel, byte[] pRawData);
+        
+        [DllImport("GALSXXYY.dll")]
+        public static extern int LIVESCAN_IsSupportPreview();
+        
+        [DllImport("GALSXXYY.dll")]
+        public static extern int LIVESCAN_GetVersion();
+        
+        [DllImport("GALSXXYY.dll")]
+        public static extern int LIVESCAN_GetDesc(byte[] pszDesc);
+        
+        [DllImport("GALSXXYY.dll")]
+        public static extern int LIVESCAN_GetErrorInfo(int nErrorNo, byte[] pszErrorInfo);
+
         // GAMC.dll functions
         [DllImport("Gamc.dll")]
         public static extern int MOSAIC_Init();
@@ -75,6 +143,50 @@ namespace FingerprintWebAPI.Services
         [DllImport("Gamc.dll")]
         public static extern int MOSAIC_Stop();
 
+        // MISSING MOSAIC FUNCTIONS FROM FOURFINGER_TEST
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_IsSupportIdentifyFinger();
+        
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_IsSupportImageQuality();
+        
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_IsSupportFingerQuality();
+        
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_IsSupportImageEnhance();
+        
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_IsSupportRollCap();
+        
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_SetRollMode(int nRollMode);
+        
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_ImageQuality(byte[] pFingerBuf, int nWidth, int nHeight);
+        
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_ImageEnhance(byte[] pFingerBuf, int nWidth, int nHeight, byte[] pTargetImg);
+        
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_GetErrorInfo(int nErrorNo, byte[] pszErrorInfo);
+        
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_GetVersion();
+        
+        [DllImport("Gamc.dll")]
+        public static extern int MOSAIC_GetDesc(byte[] pszDesc);
+
+        // Fione.dll functions - IMAGE ENHANCEMENT FROM FOURFINGER_TEST
+        [DllImport("Fione.dll")]
+        public static extern int NewImageDelFog(byte[] image, int width, int height);
+        
+        [DllImport("Fione.dll")]
+        public static extern void ImageNormalOfImage(byte[] image, int width, int height);
+        
+        [DllImport("Fione.dll")]
+        public static extern void ImageWeightFilter(byte[] image, int width, int height);
+
         // FpSplit.dll functions
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
         public struct FPSPLIT_INFO
@@ -85,7 +197,7 @@ namespace FingerprintWebAPI.Services
             public int left;
             public int angle;
             public int quality;
-            public IntPtr pOutBuf;  // Changed from byte[] to IntPtr for proper P/Invoke
+            public byte[] pOutBuf;
         }
 
         [DllImport("FpSplit.dll", CallingConvention = CallingConvention.StdCall)]
@@ -174,6 +286,23 @@ namespace FingerprintWebAPI.Services
         public static int WriteHeadRoll(byte[] output, byte[] input, int nWidth, int nHeight)
         {
             return WriteHead(output, input, nWidth, nHeight); // Same logic as WriteHead
+        }
+
+        /// <summary>
+        /// Apply image enhancement like Fourfinger_Test - improves image quality before processing
+        /// </summary>
+        public static void ApplyImageEnhancement(byte[] imageData, int width, int height)
+        {
+            try
+            {
+                ImageNormalOfImage(imageData, width, height);
+                ImageWeightFilter(imageData, width, height);
+                NewImageDelFog(imageData, width, height);
+            }
+            catch (Exception)
+            {
+                // If enhancement fails, continue without it - not critical for basic functionality
+            }
         }
     }
 }

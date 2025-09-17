@@ -8,7 +8,7 @@ namespace FingerprintWebAPI.Services
         private readonly ILogger<FingerprintService> _logger;
         private bool _isInitialized = false;
         private bool _isDeviceConnected = false;
-        private int _fpDevice = 0;
+        private long _fpDevice = 0;
         private readonly object _lockObject = new object();
         private readonly Dictionary<string, string> _storedTemplates = new Dictionary<string, string>();
 
@@ -465,17 +465,19 @@ namespace FingerprintWebAPI.Services
                         int fingerNum = 0;
                         int size = Marshal.SizeOf(typeof(FingerprintDllWrapper.FPSPLIT_INFO));
                         IntPtr infosIntPtr = Marshal.AllocHGlobal(size * 10);
+                        IntPtr pti = IntPtr.Zero;
 
                         try
                         {
-                            // Allocate memory for each finger image
+                            // Allocate memory EXACTLY like Fourfinger_Test
+                            pti = Marshal.AllocHGlobal(request.SplitWidth * request.SplitHeight * 10);
                             for (int i = 0; i < 10; i++)
                             {
-                                // Calculate correct offset for pOutBuf field (6 ints * 4 bytes = 24 bytes)
-                                IntPtr ptr = IntPtr.Add(infosIntPtr, i * size + 24);
-                                IntPtr p = Marshal.AllocHGlobal(request.SplitWidth * request.SplitHeight);
-                                Marshal.WriteIntPtr(ptr, p);
+                                Marshal.WriteIntPtr((IntPtr)((UInt64)infosIntPtr + 24 + (UInt64)(i * size)), (IntPtr)((UInt64)pti + (UInt64)(i * request.SplitWidth * request.SplitHeight)));
                             }
+
+                            // Apply image enhancement like Fourfinger_Test
+                            FingerprintDllWrapper.ApplyImageEnhancement(rawData, request.Width, request.Height);
 
                             // Perform the split
                             int splitResult = FingerprintDllWrapper.FPSPLIT_DoSplit(rawData, request.Width, request.Height, 
@@ -514,16 +516,11 @@ namespace FingerprintWebAPI.Services
                         }
                         finally
                         {
-                            // Free allocated memory
-                            for (int i = 0; i < 10; i++)
-                            {
-                                IntPtr ptr = Marshal.ReadIntPtr(IntPtr.Add(infosIntPtr, i * size + 24));
-                                if (ptr != IntPtr.Zero)
-                                {
-                                    Marshal.FreeHGlobal(ptr);
-                                }
-                            }
-                            Marshal.FreeHGlobal(infosIntPtr);
+                            // Free allocated memory - FIXED FOR 64-BIT
+                            if (pti != IntPtr.Zero)
+                                Marshal.FreeHGlobal(pti);
+                            if (infosIntPtr != IntPtr.Zero)
+                                Marshal.FreeHGlobal(infosIntPtr);
                         }
                     }
                     catch (Exception ex)
@@ -548,12 +545,12 @@ namespace FingerprintWebAPI.Services
             {
                 try
                 {
-                    // Read FPSPLIT_INFO structure
-                    IntPtr structPtr = IntPtr.Add(infosIntPtr, i * size);
+                    // Read FPSPLIT_INFO structure - FIXED FOR 64-BIT
+                    IntPtr structPtr = (IntPtr)((UInt64)infosIntPtr + (UInt64)(i * size));
                     var info = Marshal.PtrToStructure<FingerprintDllWrapper.FPSPLIT_INFO>(structPtr);
 
-                    // Read image data from the pOutBuf pointer
-                    IntPtr imagePtr = info.pOutBuf;
+                    // Read image data - EXACTLY like Fourfinger_Test line 1298
+                    IntPtr imagePtr = Marshal.ReadIntPtr((IntPtr)((UInt64)infosIntPtr + (UInt64)(i * size) + 24));
                     byte[] rawImageData = new byte[width * height];
                     Marshal.Copy(imagePtr, rawImageData, 0, rawImageData.Length);
 
@@ -591,12 +588,12 @@ namespace FingerprintWebAPI.Services
             {
                 try
                 {
-                    // Read FPSPLIT_INFO structure
-                    IntPtr structPtr = IntPtr.Add(infosIntPtr, i * size);
+                    // Read FPSPLIT_INFO structure - FIXED FOR 64-BIT
+                    IntPtr structPtr = (IntPtr)((UInt64)infosIntPtr + (UInt64)(i * size));
                     var info = Marshal.PtrToStructure<FingerprintDllWrapper.FPSPLIT_INFO>(structPtr);
 
-                    // Read image data from the pOutBuf pointer
-                    IntPtr imagePtr = info.pOutBuf;
+                    // Read image data - EXACTLY like Fourfinger_Test line 1298
+                    IntPtr imagePtr = Marshal.ReadIntPtr((IntPtr)((UInt64)infosIntPtr + (UInt64)(i * size) + 24));
                     byte[] rawImageData = new byte[width * height];
                     Marshal.Copy(imagePtr, rawImageData, 0, rawImageData.Length);
 
@@ -859,14 +856,18 @@ namespace FingerprintWebAPI.Services
                             int size = Marshal.SizeOf(typeof(FingerprintDllWrapper.FPSPLIT_INFO));
                             IntPtr infosIntPtr = Marshal.AllocHGlobal(size * 10);
 
+                            IntPtr pti = IntPtr.Zero;
                             try
                             {
+                                // FIXED FOR 64-BIT - Use same pattern as Fourfinger_Test
+                                pti = Marshal.AllocHGlobal(300 * 400 * 10);
                                 for (int i = 0; i < 10; i++)
                                 {
-                                    IntPtr ptr = IntPtr.Add(infosIntPtr, i * size + 24);
-                                    IntPtr p = Marshal.AllocHGlobal(300 * 400);
-                                    Marshal.WriteIntPtr(ptr, p);
+                                    Marshal.WriteIntPtr((IntPtr)((UInt64)infosIntPtr + 24 + (UInt64)(i * size)), (IntPtr)((UInt64)pti + (UInt64)(i * 300 * 400)));
                                 }
+
+                                // Apply image enhancement
+                                FingerprintDllWrapper.ApplyImageEnhancement(data, request.Width, request.Height);
 
                                 int splitResult = FingerprintDllWrapper.FPSPLIT_DoSplit(data, request.Width, request.Height, 
                                     1, 300, 400, ref fingerNum, infosIntPtr);
@@ -895,14 +896,11 @@ namespace FingerprintWebAPI.Services
                             }
                             finally
                             {
-                                // Free allocated memory
-                                for (int i = 0; i < 10; i++)
-                                {
-                                    IntPtr ptr = Marshal.ReadIntPtr(IntPtr.Add(infosIntPtr, i * size + 24));
-                                    if (ptr != IntPtr.Zero)
-                                        Marshal.FreeHGlobal(ptr);
-                                }
-                                Marshal.FreeHGlobal(infosIntPtr);
+                                // Free allocated memory - FIXED FOR 64-BIT
+                                if (pti != IntPtr.Zero)
+                                    Marshal.FreeHGlobal(pti);
+                                if (infosIntPtr != IntPtr.Zero)
+                                    Marshal.FreeHGlobal(infosIntPtr);
                             }
                         }
                     }

@@ -1,0 +1,451 @@
+{
+  "info": {
+    "name": "BIO600 Fingerprint API",
+    "description": "Complete API collection for BIO600 fingerprint scanner web service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Device Management",
+      "item": [
+        {
+          "name": "Initialize Device",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/initialize",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "initialize"]
+            }
+          }
+        },
+        {
+          "name": "Get Device Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "status"]
+            }
+          }
+        },
+        {
+          "name": "Close Device",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/close",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "close"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Image Capture",
+      "item": [
+        {
+          "name": "Capture Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/capture",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "capture"]
+            }
+          }
+        },
+        {
+          "name": "Capture Roll Fingerprint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": 0,\n  \"width\": 800,\n  \"height\": 750\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/capture/roll",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "capture", "roll"]
+            }
+          }
+        },
+        {
+          "name": "Capture Single Finger (300x400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": 0,\n  \"width\": 300,\n  \"height\": 400\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/capture",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "capture"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Template Operations",
+      "item": [
+        {
+          "name": "Capture ISO Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"ISO\",\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/template",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "template"]
+            }
+          }
+        },
+        {
+          "name": "Capture ANSI Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"ANSI\",\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/template",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "template"]
+            }
+          }
+        },
+        {
+          "name": "Capture Both Templates",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"BOTH\",\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/template",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "template"]
+            }
+          }
+        },
+        {
+          "name": "Compare Templates",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template1\": \"<base64-template-1>\",\n  \"template2\": \"<base64-template-2>\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/compare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "compare"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Finger Type Capture",
+      "item": [
+        {
+          "name": "Capture Left Four Fingers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fingerType\": 1,\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/capture/finger-type",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "capture", "finger-type"]
+            }
+          }
+        },
+        {
+          "name": "Capture Right Four Fingers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fingerType\": 2,\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/capture/finger-type",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "capture", "finger-type"]
+            }
+          }
+        },
+        {
+          "name": "Capture Two Thumbs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fingerType\": 3,\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/capture/finger-type",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "capture", "finger-type"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Image Splitting",
+      "item": [
+        {
+          "name": "Split Four Right Fingers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500,\n  \"splitWidth\": 300,\n  \"splitHeight\": 400\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/split/four-right",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "split", "four-right"]
+            }
+          }
+        },
+        {
+          "name": "Split Two Thumbs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500,\n  \"splitWidth\": 300,\n  \"splitHeight\": 400\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/split/two-thumbs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "split", "two-thumbs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Device Control",
+      "item": [
+        {
+          "name": "Play Beep",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/beep/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "beep", "1"]
+            }
+          }
+        },
+        {
+          "name": "Set LED Light",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/led/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "led", "2"]
+            }
+          }
+        },
+        {
+          "name": "Set Finger Dry/Wet Level",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/dry-wet/4",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "dry-wet", "4"]
+            }
+          }
+        },
+        {
+          "name": "Set Device Settings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dryWetLevel\": 4,\n  \"ledImageIndex\": 2,\n  \"lcdImageIndex\": 0,\n  \"useBeep\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "settings"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Preview Control",
+      "item": [
+        {
+          "name": "Start Preview",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command\": \"start_preview\",\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/preview/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "preview", "start"]
+            }
+          }
+        },
+        {
+          "name": "Stop Preview",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/preview/stop",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "preview", "stop"]
+            }
+          }
+        },
+        {
+          "name": "Get Preview Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/preview/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "preview", "status"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ]
+}
