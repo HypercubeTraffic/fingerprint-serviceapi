@@ -49,8 +49,6 @@ class FingerprintPreview {
         
         // NEW CUSTOM ENDPOINT ELEMENTS
         this.captureRightFourTemplatesBtn = document.getElementById('captureRightFourTemplatesBtn');
-        this.downloadRightFourTemplatesBtn = document.getElementById('downloadRightFourTemplatesBtn');
-        this.downloadRightFourImagesBtn = document.getElementById('downloadRightFourImagesBtn');
         
         this.channelSelect = document.getElementById('channelSelect');
         this.widthInput = document.getElementById('widthInput');
@@ -138,8 +136,6 @@ class FingerprintPreview {
         
         // NEW CUSTOM ENDPOINT EVENT LISTENERS
         this.captureRightFourTemplatesBtn.addEventListener('click', () => this.captureRightFourTemplates());
-        this.downloadRightFourTemplatesBtn.addEventListener('click', () => this.downloadRightFourTemplates());
-        this.downloadRightFourImagesBtn.addEventListener('click', () => this.downloadRightFourImages());
         
         this.fingerTypeSelect.addEventListener('change', () => this.setFingerDryWet());
     }
@@ -1080,10 +1076,21 @@ class FingerprintPreview {
     }
 
     handleRightFourTemplatesResult(data) {
+        console.log('Right four templates result:', data); // Debug logging
+        
         if (data.success) {
             this.currentRightFourTemplatesResult = data;
             this.updateRightFourTemplatesUI(data);
-            this.log(`Right four fingers templates captured successfully! Format: ${data.fingerTemplates?.[0]?.isoTemplate && data.fingerTemplates?.[0]?.ansiTemplate ? 'BOTH' : data.fingerTemplates?.[0]?.isoTemplate ? 'ISO' : 'ANSI'}, Fingers: ${data.detectedFingerCount}`, 'success');
+            
+            // Check what templates were actually created
+            let templateInfo = 'Unknown';
+            if (data.fingerTemplates && data.fingerTemplates.length > 0) {
+                const hasIso = data.fingerTemplates.some(f => f.isoTemplate);
+                const hasAnsi = data.fingerTemplates.some(f => f.ansiTemplate);
+                templateInfo = hasIso && hasAnsi ? 'BOTH' : hasIso ? 'ISO' : hasAnsi ? 'ANSI' : 'None';
+            }
+            
+            this.log(`Right four fingers templates captured successfully! Format: ${templateInfo}, Fingers: ${data.detectedFingerCount}`, 'success');
             
             // Display full image if available
             if (data.imageData) {
@@ -1191,9 +1198,17 @@ class FingerprintPreview {
         this.rightFourOverallQuality.textContent = result.overallQuality || 0;
         this.rightFourTemplateStatus.textContent = result.success ? 'Success' : 'Failed';
 
-        // Enable download buttons if we have data
-        this.downloadRightFourTemplatesBtn.disabled = !result.success || !result.fingerTemplates?.length;
-        this.downloadRightFourImagesBtn.disabled = !result.success || !result.fingerTemplates?.length;
+        // AUTOMATIC DOWNLOAD: Download templates and images immediately if successful
+        if (result.success && result.fingerTemplates?.length > 0) {
+            const hasTemplates = result.fingerTemplates.some(f => f.isoTemplate || f.ansiTemplate);
+            if (hasTemplates) {
+                this.log('🚀 Auto-downloading templates and images...', 'info');
+                this.downloadRightFourTemplates();
+                this.downloadRightFourImages();
+            } else {
+                this.log('⚠️ Fingers detected but templates not created. Check finger quality or service logs.', 'warning');
+            }
+        }
 
         // Display individual finger details
         if (result.fingerTemplates && result.fingerTemplates.length > 0) {
