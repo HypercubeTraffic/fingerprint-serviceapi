@@ -1346,6 +1346,8 @@ class FingerprintPreview {
 
     handleFullRightFourResult(data) {
         console.log('Full right four template result:', data); // Debug logging
+        console.log('ISO Template:', data.isoTemplate); // Debug ISO template
+        console.log('ANSI Template:', data.ansiTemplate); // Debug ANSI template
         
         if (data.success) {
             this.currentFullRightFourResult = data;
@@ -1357,6 +1359,7 @@ class FingerprintPreview {
             const templateInfo = hasIso && hasAnsi ? 'BOTH' : hasIso ? 'ISO' : hasAnsi ? 'ANSI' : 'None';
             
             this.log(`Full right four fingers template captured successfully! Format: ${templateInfo}, Quality: ${data.overallQuality}`, 'success');
+            this.log(`Debug: hasIso=${hasIso}, hasAnsi=${hasAnsi}, isoTemplate=${data.isoTemplate ? 'exists' : 'null'}`, 'info');
             
             // Display full image if available
             if (data.imageData) {
@@ -1367,6 +1370,8 @@ class FingerprintPreview {
             if (hasIso || hasAnsi) {
                 this.log('🚀 Auto-downloading full template...', 'info');
                 this.downloadFullRightFourTemplate();
+            } else {
+                this.log('⚠️ No templates to download - isoTemplate and ansiTemplate are both null', 'warning');
             }
             
             // Play success sound
