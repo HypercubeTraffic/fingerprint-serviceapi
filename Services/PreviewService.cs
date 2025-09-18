@@ -155,20 +155,9 @@ namespace FingerprintWebAPI.Services
                             // Note: Removed vertical flip to test if it's causing upside-down display
                             // FingerprintDllWrapper.FlipImageVertically(rawData, _currentWidth, _currentHeight);
 
-                            // Adaptive compression and frame rate based on network conditions
-                            string base64Data;
-                            
-                            // Check if we're dealing with a network connection (not localhost)
-                            if (_isNetworkConnection)
-                            {
-                                // For network connections, compress the data and reduce resolution if needed
-                                base64Data = await CompressImageDataAsync(rawData, _currentWidth, _currentHeight);
-                            }
-                            else
-                            {
-                                // For localhost, send raw data as before
-                                base64Data = Convert.ToBase64String(rawData, 0, _currentWidth * _currentHeight);
-                            }
+
+                            // Always send raw data for best quality (no forced compression)
+                            string base64Data = Convert.ToBase64String(rawData, 0, _currentWidth * _currentHeight);
 
                             var previewData = new FingerprintPreviewData
                             {
