@@ -1173,8 +1173,10 @@ class FingerprintPreview {
                 height: height,
                 splitWidth: splitWidth,
                 splitHeight: splitHeight,
-                minQuality: 30
+                minQuality: 20  // Lower threshold to be more permissive
             };
+            
+            this.log(`Sending capture command: Format=${format}, MinQuality=20`, 'info');
 
             await this.connection.invoke("SendMessage", JSON.stringify(message));
         } catch (err) {

@@ -1417,6 +1417,10 @@ namespace FingerprintWebAPI.Services
                                     byte[] fingerImageData = new byte[256 * 360]; // Fixed size like original
                                     Marshal.Copy(imagePtr, fingerImageData, 0, 256 * 360);
 
+                                    // Create BMP for individual finger - Fixed 256x360 size (MUST be before quality check)
+                                    byte[] fingerBmpData = new byte[1078 + 256 * 360];
+                                    FingerprintDllWrapper.WriteHead(fingerBmpData, fingerImageData, 256, 360);
+
                                     // Check individual finger quality - EXACT pattern from Fourfinger_Test line 1300
                                     int fingerQuality = FingerprintDllWrapper.MOSAIC_FingerQuality(fingerImageData, 256, 360);
                                     _logger.LogInformation("Finger {Index} ({Name}) quality: {Quality}", i, fingerNames[i], fingerQuality);
@@ -1425,12 +1429,24 @@ namespace FingerprintWebAPI.Services
                                     {
                                         allFingersGoodQuality = false;
                                         qualityIssues += $"{fingerNames[i]}: {fingerQuality} (min: {request.MinQuality}); ";
+                                        _logger.LogWarning("Finger {FingerName} quality {Quality} below minimum {MinQuality}, skipping template creation", fingerNames[i], fingerQuality, request.MinQuality);
+                                        
+                                        // Still add the finger data but without templates
+                                        var lowQualityTemplate = new FingerTemplateData
+                                        {
+                                            FingerName = fingerNames[i],
+                                            FingerIndex = i,
+                                            Quality = fingerQuality,
+                                            ImageData = Convert.ToBase64String(fingerBmpData),
+                                            X = info.x,
+                                            Y = info.y,
+                                            Top = info.top,
+                                            Left = info.left,
+                                            Angle = info.angle
+                                        };
+                                        fingerTemplates.Add(lowQualityTemplate);
                                         continue;
                                     }
-
-                                    // Create BMP for individual finger - Fixed 256x360 size
-                                    byte[] fingerBmpData = new byte[1078 + 256 * 360];
-                                    FingerprintDllWrapper.WriteHead(fingerBmpData, fingerImageData, 256, 360);
 
                                     // Create templates based on requested format
                                     var fingerTemplate = new FingerTemplateData
@@ -1528,13 +1544,26 @@ namespace FingerprintWebAPI.Services
                             FingerprintDllWrapper.LIVESCAN_SetLedLight(17); // Right four fingers success LED
                             FingerprintDllWrapper.LIVESCAN_Beep(1); // Success beep
 
+                            _logger.LogInformation("Final result: FingerCount={FingerCount}, TemplatesCreated={AllTemplatesCreated}, TemplateListCount={TemplateCount}", 
+                                fingerNum, allTemplatesCreated, fingerTemplates.Count);
+                            
+                            // Log template details
+                            foreach (var template in fingerTemplates)
+                            {
+                                _logger.LogInformation("Template {Name}: HasISO={HasIso}, HasANSI={HasAnsi}, Quality={Quality}", 
+                                    template.FingerName, 
+                                    template.IsoTemplate != null, 
+                                    template.AnsiTemplate != null, 
+                                    template.Quality);
+                            }
+
                             return new RightFourFingersTemplateResponse
                             {
-                                Success = allTemplatesCreated,
+                                Success = true, // Always return success if we detected fingers, even if some templates failed
                                 DetectedFingerCount = fingerNum,
                                 Message = allTemplatesCreated 
-                                    ? $"Successfully captured and created {request.Format} templates for all 4 right fingers"
-                                    : $"Captured fingers but some template creation failed. Check individual finger results.",
+                                    ? $"Successfully captured and created {request.Format} templates for all {fingerNum} right fingers"
+                                    : $"Captured {fingerNum} fingers. Some templates may have failed due to quality. Check individual results.",
                                 FingerTemplates = fingerTemplates,
                                 OverallQuality = overallQuality,
                                 ImageData = fullImageBase64
