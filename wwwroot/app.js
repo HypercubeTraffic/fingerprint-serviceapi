@@ -1200,13 +1200,12 @@ class FingerprintPreview {
         this.rightFourOverallQuality.textContent = result.overallQuality || 0;
         this.rightFourTemplateStatus.textContent = result.success ? 'Success' : 'Failed';
 
-        // AUTOMATIC DOWNLOAD: Download templates and images immediately if successful
+        // AUTOMATIC DOWNLOAD: Download TEMPLATES (ISO/ANSI) immediately if successful
         if (result.success && result.fingerTemplates?.length > 0) {
             const hasTemplates = result.fingerTemplates.some(f => f.isoTemplate || f.ansiTemplate);
             if (hasTemplates) {
-                this.log('🚀 Auto-downloading templates and images...', 'info');
-                this.downloadRightFourTemplates();
-                this.downloadRightFourImages();
+                this.log('🚀 Auto-downloading fingerprint templates (ISO/ANSI)...', 'info');
+                this.downloadRightFourTemplates(); // Only download templates, not images
             } else {
                 this.log('⚠️ Fingers detected but templates not created. Check finger quality or service logs.', 'warning');
             }
@@ -1245,14 +1244,16 @@ class FingerprintPreview {
         this.currentRightFourTemplatesResult.fingerTemplates.forEach((finger, index) => {
             if (finger.isoTemplate) {
                 const filename = `${finger.fingerName}_ISO_template_${timestamp}.dat`;
-                this.downloadTemplate(finger.isoTemplate.data, filename);
+                this.downloadBinaryData(finger.isoTemplate.data, filename);
                 downloadCount++;
+                this.log(`📄 Downloaded ISO template: ${filename}`, 'success');
             }
             
             if (finger.ansiTemplate) {
                 const filename = `${finger.fingerName}_ANSI_template_${timestamp}.dat`;
-                this.downloadTemplate(finger.ansiTemplate.data, filename);
+                this.downloadBinaryData(finger.ansiTemplate.data, filename);
                 downloadCount++;
+                this.log(`📄 Downloaded ANSI template: ${filename}`, 'success');
             }
         });
 
