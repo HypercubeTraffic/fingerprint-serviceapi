@@ -21,7 +21,12 @@ try
     builder.Services.AddSwaggerGen();
 
     // Add SignalR for WebSocket communication
-    builder.Services.AddSignalR();
+    builder.Services.AddSignalR(options =>
+    {
+        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+        options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+        options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    });
 
     // Add CORS
     builder.Services.AddCors(options =>
@@ -56,7 +61,13 @@ try
         app.UseSwaggerUI();
     }
 
-    app.UseHttpsRedirection();
+    // Only use HTTPS redirection when not binding to all interfaces
+    // When using 0.0.0.0, external clients may not have HTTPS available
+    if (!args.Any(arg => arg.Contains("0.0.0.0")))
+    {
+        app.UseHttpsRedirection();
+    }
+    
     app.UseStaticFiles();
 
     app.UseCors("AllowAll");

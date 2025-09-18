@@ -124,10 +124,25 @@ class FingerprintPreview {
     }
 
     async connectSignalR() {
+        // Prevent multiple connection attempts
+        if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+            this.log('Already connected to SignalR', 'info');
+            return;
+        }
+        
+        if (this.connection && this.connection.state === signalR.HubConnectionState.Connecting) {
+            this.log('Connection attempt already in progress', 'info');
+            return;
+        }
+
         this.log('Connecting to SignalR...', 'info');
 
         this.connection = new signalR.HubConnectionBuilder()
-            .withUrl("/ws/fingerprint")
+            .withUrl("/ws/fingerprint", {
+                skipNegotiation: false,
+                transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling
+            })
+            .withAutomaticReconnect([0, 2000, 10000, 30000])
             .build();
 
         this.connection.on("ReceiveMessage", (message) => {
@@ -145,21 +160,27 @@ class FingerprintPreview {
             this.log('SignalR connection error: ' + err, 'error');
             this.updateConnectionStatus(false);
             
-            // Attempt to reconnect after 3 seconds
-            setTimeout(() => {
-                this.connectSignalR();
-            }, 3000);
+            // Don't attempt manual reconnection since we have automatic reconnect
+            this.log('Automatic reconnection will be attempted...', 'info');
         }
+
+        this.connection.onreconnecting(() => {
+            this.log('SignalR reconnecting...', 'warning');
+            this.updateConnectionStatus(false);
+        });
+
+        this.connection.onreconnected(() => {
+            this.log('SignalR reconnected', 'success');
+            this.updateConnectionStatus(true);
+        });
 
         this.connection.onclose(async () => {
             this.log('SignalR disconnected', 'warning');
             this.updateConnectionStatus(false);
             this.updatePreviewStatus(false);
-
-            // Attempt to reconnect after 3 seconds
-            setTimeout(() => {
-                this.connectSignalR();
-            }, 3000);
+            
+            // Don't attempt manual reconnection since we have automatic reconnect
+            this.log('Connection closed. Automatic reconnection will be attempted...', 'info');
         });
     }
 
