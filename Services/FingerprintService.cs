@@ -46,13 +46,7 @@ namespace FingerprintWebAPI.Services
                             return false;
                         }
 
-                        // Initialize FPSPLIT for splitting operations
-                        result = FingerprintDllWrapper.FPSPLIT_Init(1600, 1500, 1);
-                        if (result != 1)
-                        {
-                            _logger.LogWarning("Failed to initialize FPSPLIT: {Result}", result);
-                            // Continue anyway as this might not be critical
-                        }
+                        // NOTE: FPSPLIT_Init is not called in original Fourfinger_Test - DLL handles initialization automatically
 
                         // Initialize fingerprint algorithm device
                         _fpDevice = FingerprintDllWrapper.ZAZ_FpStdLib_OpenDevice();
@@ -1320,37 +1314,45 @@ namespace FingerprintWebAPI.Services
                         // Set LED for right four fingers (like Fourfinger_Test)
                         FingerprintDllWrapper.LIVESCAN_SetLedLight(3); // Right four fingers LED
                         FingerprintDllWrapper.LIVESCAN_Beep(1); // Audio indication
+                        _logger.LogInformation("LED and beep set for right four fingers");
 
                         // Set capture window
                         FingerprintDllWrapper.LIVESCAN_SetCaptWindow(request.Channel, 0, 0, request.Width, request.Height);
+                        _logger.LogInformation("Capture window set: {Width}x{Height}", request.Width, request.Height);
 
                         // Capture raw data - Use w*h*2 for template operations like Fourfinger_Test line 1238
                         byte[] rawData = new byte[request.Width * request.Height * 2];
                         int result = FingerprintDllWrapper.LIVESCAN_GetFPRawData(request.Channel, rawData);
+                        _logger.LogInformation("Raw data capture result: {Result}, Buffer size: {Size}", result, rawData.Length);
                         
                         if (result != 1)
                         {
+                            _logger.LogError("Failed to capture fingerprint data, result: {Result}", result);
                             return new RightFourFingersTemplateResponse
                             {
                                 Success = false,
-                                Message = "Failed to capture fingerprint data"
+                                Message = $"Failed to capture fingerprint data: {result}"
                             };
                         }
 
                         // Check overall quality
                         int overallQuality = FingerprintDllWrapper.MOSAIC_FingerQuality(rawData, request.Width, request.Height);
+                        _logger.LogInformation("Overall image quality: {Quality}", overallQuality);
                         if (overallQuality < 0)
                         {
+                            _logger.LogWarning("Poor image quality detected: {Quality}", overallQuality);
                             return new RightFourFingersTemplateResponse
                             {
                                 Success = false,
-                                Message = "Poor image quality or no fingers detected"
+                                Message = $"Poor image quality or no fingers detected: {overallQuality}"
                             };
                         }
 
-                        // Apply image enhancements like Fourfinger_Test
+                        // Apply image enhancements like Fourfinger_Test (CRITICAL: Apply BEFORE splitting)
+                        _logger.LogInformation("Applying image enhancements...");
                         FingerprintDllWrapper.ApplyImageEnhancement(rawData, request.Width, request.Height);
                         FingerprintDllWrapper.FlipImageVertically(rawData, request.Width, request.Height);
+                        _logger.LogInformation("Image enhancements applied");
 
                         // Create BMP for full image
                         byte[] fullImageBmp = new byte[1078 + request.Width * request.Height];
@@ -1358,31 +1360,43 @@ namespace FingerprintWebAPI.Services
                         string fullImageBase64 = Convert.ToBase64String(fullImageBmp);
 
                         // Perform finger splitting EXACTLY like Fourfinger_Test line 1280-1289
+                        // CRITICAL: Use fixed 256x360 like the original, not configurable sizes
                         int fingerNum = 0;
                         int size = Marshal.SizeOf(typeof(FingerprintDllWrapper.FPSPLIT_INFO));
                         IntPtr infosIntPtr = Marshal.AllocHGlobal(size * 10);
-                        IntPtr p = Marshal.AllocHGlobal(request.SplitWidth * request.SplitHeight * 10);
+                        IntPtr p = Marshal.AllocHGlobal(256 * 360 * 10); // Fixed size like original
+                        
+                        _logger.LogInformation("Memory allocated for splitting: size={Size}, fingerSlots=10", size);
                         
                         try
                         {
+                            // EXACT memory setup pattern from Fourfinger_Test line 1284-1287
                             for (int i = 0; i < 10; i++)
                             {
                                 Marshal.WriteIntPtr((IntPtr)((UInt64)infosIntPtr + 24 + (UInt64)(i * size)), 
-                                    (IntPtr)((UInt64)p + (UInt64)(i * request.SplitWidth * request.SplitHeight)));
+                                    (IntPtr)((UInt64)p + (UInt64)(i * 256 * 360)));
                             }
+                            _logger.LogInformation("Memory pointers set up for finger splitting");
                             
+                            // CRITICAL: Use 256x360 fixed size like original Fourfinger_Test
                             int splitResult = FingerprintDllWrapper.FPSPLIT_DoSplit(rawData, request.Width, request.Height, 
-                                1, request.SplitWidth, request.SplitHeight, ref fingerNum, infosIntPtr);
+                                1, 256, 360, ref fingerNum, infosIntPtr);
                             
-                            if (fingerNum != 4) // We expect exactly 4 fingers for right four fingers
+                            _logger.LogInformation("FPSPLIT_DoSplit completed: result={SplitResult}, fingerNum={FingerNum}", splitResult, fingerNum);
+                            
+                            // IMPORTANT: Follow Fourfinger_Test pattern - check if ANY fingers detected first
+                            if (fingerNum <= 0)
                             {
+                                _logger.LogWarning("No fingers detected during splitting");
                                 return new RightFourFingersTemplateResponse
                                 {
                                     Success = false,
                                     DetectedFingerCount = fingerNum,
-                                    Message = $"Expected 4 fingers but detected {fingerNum}. Please ensure all four right fingers are properly placed."
+                                    Message = $"No fingers detected. Please ensure fingers are properly placed on the scanner."
                                 };
                             }
+                            
+                            _logger.LogInformation("Detected {FingerCount} fingers, processing templates...", fingerNum);
 
                             var fingerTemplates = new List<FingerTemplateData>();
                             string[] fingerNames = { "right_index", "right_middle", "right_ring", "right_little" };
@@ -1398,13 +1412,14 @@ namespace FingerprintWebAPI.Services
                                     IntPtr structPtr = (IntPtr)((UInt64)infosIntPtr + (UInt64)(i * size));
                                     var info = Marshal.PtrToStructure<FingerprintDllWrapper.FPSPLIT_INFO>(structPtr);
 
-                                    // Extract finger image data
+                                    // Extract finger image data - EXACT pattern from Fourfinger_Test line 1298-1299
                                     IntPtr imagePtr = Marshal.ReadIntPtr((IntPtr)((UInt64)infosIntPtr + (UInt64)(i * size) + 24));
-                                    byte[] fingerImageData = new byte[request.SplitWidth * request.SplitHeight];
-                                    Marshal.Copy(imagePtr, fingerImageData, 0, fingerImageData.Length);
+                                    byte[] fingerImageData = new byte[256 * 360]; // Fixed size like original
+                                    Marshal.Copy(imagePtr, fingerImageData, 0, 256 * 360);
 
-                                    // Check individual finger quality
-                                    int fingerQuality = FingerprintDllWrapper.MOSAIC_FingerQuality(fingerImageData, request.SplitWidth, request.SplitHeight);
+                                    // Check individual finger quality - EXACT pattern from Fourfinger_Test line 1300
+                                    int fingerQuality = FingerprintDllWrapper.MOSAIC_FingerQuality(fingerImageData, 256, 360);
+                                    _logger.LogInformation("Finger {Index} ({Name}) quality: {Quality}", i, fingerNames[i], fingerQuality);
                                     
                                     if (fingerQuality < request.MinQuality)
                                     {
@@ -1413,9 +1428,9 @@ namespace FingerprintWebAPI.Services
                                         continue;
                                     }
 
-                                    // Create BMP for individual finger
-                                    byte[] fingerBmpData = new byte[1078 + request.SplitWidth * request.SplitHeight];
-                                    FingerprintDllWrapper.WriteHead(fingerBmpData, fingerImageData, request.SplitWidth, request.SplitHeight);
+                                    // Create BMP for individual finger - Fixed 256x360 size
+                                    byte[] fingerBmpData = new byte[1078 + 256 * 360];
+                                    FingerprintDllWrapper.WriteHead(fingerBmpData, fingerImageData, 256, 360);
 
                                     // Create templates based on requested format
                                     var fingerTemplate = new FingerTemplateData
@@ -1434,8 +1449,10 @@ namespace FingerprintWebAPI.Services
                                     // Create ISO template if requested
                                     if (request.Format.ToUpper() == "ISO" || request.Format.ToUpper() == "BOTH")
                                     {
+                                        _logger.LogInformation("Creating ISO template for {FingerName}...", fingerNames[i]);
                                         byte[] isoTemplate = new byte[1024];
                                         int isoResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateISOTemplate(_fpDevice, fingerImageData, isoTemplate);
+                                        _logger.LogInformation("ISO template creation result for {FingerName}: {Result}", fingerNames[i], isoResult);
                                         
                                         if (isoResult != 0)
                                         {
@@ -1445,6 +1462,7 @@ namespace FingerprintWebAPI.Services
                                                 Size = 1024,
                                                 Quality = fingerQuality
                                             };
+                                            _logger.LogInformation("ISO template created successfully for {FingerName}", fingerNames[i]);
                                         }
                                         else
                                         {
