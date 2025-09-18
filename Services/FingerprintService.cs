@@ -1670,26 +1670,85 @@ namespace FingerprintWebAPI.Services
                         FingerprintDllWrapper.WriteHead(fullImageBmp, rawData, request.Width, request.Height);
                         string fullImageBase64 = Convert.ToBase64String(fullImageBmp);
 
-                        // Extract center region for template creation (like focusing on main finger area)
-                        // Template creation functions work best with single-finger sized data (256x360)
-                        int centerX = (request.Width - 256) / 2;
-                        int centerY = (request.Height - 360) / 2;
-                        byte[] centerImageData = new byte[256 * 360];
+                        // BETTER APPROACH: Split fingers first, then use the BEST QUALITY finger for the "full" template
+                        // This follows the same pattern as Fourfinger_Test - templates are always from individual fingers
                         
-                        // Extract 256x360 center region from the full image
-                        for (int y = 0; y < 360; y++)
+                        // Perform finger splitting to get individual fingers
+                        int fingerNum = 0;
+                        int size = Marshal.SizeOf(typeof(FingerprintDllWrapper.FPSPLIT_INFO));
+                        IntPtr infosIntPtr = Marshal.AllocHGlobal(size * 10);
+                        IntPtr p = Marshal.AllocHGlobal(256 * 360 * 10);
+                        
+                        byte[] bestFingerData = null;
+                        int bestQuality = 0;
+                        string bestFingerName = "";
+                        
+                        try
                         {
-                            for (int x = 0; x < 256; x++)
+                            // Set up memory pointers like Fourfinger_Test
+                            for (int i = 0; i < 10; i++)
                             {
-                                int sourceIndex = ((centerY + y) * request.Width + (centerX + x)) * 2; // *2 because raw data is 16-bit
-                                int destIndex = y * 256 + x;
-                                if (sourceIndex < rawData.Length - 1)
+                                Marshal.WriteIntPtr((IntPtr)((UInt64)infosIntPtr + 24 + (UInt64)(i * size)), 
+                                    (IntPtr)((UInt64)p + (UInt64)(i * 256 * 360)));
+                            }
+                            
+                            // Split fingers
+                            int splitResult = FingerprintDllWrapper.FPSPLIT_DoSplit(rawData, request.Width, request.Height, 
+                                1, 256, 360, ref fingerNum, infosIntPtr);
+                            
+                            _logger.LogInformation("FPSPLIT_DoSplit for full template: result={SplitResult}, fingerNum={FingerNum}", splitResult, fingerNum);
+                            
+                            if (fingerNum > 0)
+                            {
+                                // Find the best quality finger to use as the "full" template
+                                string[] fingerNames = { "right_index", "right_middle", "right_ring", "right_little" };
+                                
+                                for (int i = 0; i < fingerNum && i < fingerNames.Length; i++)
                                 {
-                                    centerImageData[destIndex] = rawData[sourceIndex]; // Take the first byte of each pixel
+                                    // Extract finger image data
+                                    IntPtr imagePtr = Marshal.ReadIntPtr((IntPtr)((UInt64)infosIntPtr + (UInt64)(i * size) + 24));
+                                    byte[] fingerImageData = new byte[256 * 360];
+                                    Marshal.Copy(imagePtr, fingerImageData, 0, 256 * 360);
+                                    
+                                    // Check finger quality
+                                    int fingerQuality = FingerprintDllWrapper.MOSAIC_FingerQuality(fingerImageData, 256, 360);
+                                    _logger.LogInformation("Finger {Index} ({Name}) quality for full template: {Quality}", i, fingerNames[i], fingerQuality);
+                                    
+                                    if (fingerQuality > bestQuality && fingerQuality >= request.MinQuality)
+                                    {
+                                        bestQuality = fingerQuality;
+                                        bestFingerData = fingerImageData;
+                                        bestFingerName = fingerNames[i];
+                                    }
                                 }
+                                
+                                if (bestFingerData == null)
+                                {
+                                    return new FullRightFourFingersResponse
+                                    {
+                                        Success = false,
+                                        Message = $"No fingers meet minimum quality {request.MinQuality} for template creation"
+                                    };
+                                }
+                                
+                                _logger.LogInformation("Using {BestFinger} (quality {BestQuality}) for full template creation", bestFingerName, bestQuality);
+                            }
+                            else
+                            {
+                                return new FullRightFourFingersResponse
+                                {
+                                    Success = false,
+                                    Message = "No fingers detected for template creation"
+                                };
                             }
                         }
-                        _logger.LogInformation("Extracted center region {CenterX},{CenterY} size 256x360 for template creation", centerX, centerY);
+                        finally
+                        {
+                            if (p != IntPtr.Zero)
+                                Marshal.FreeHGlobal(p);
+                            if (infosIntPtr != IntPtr.Zero)
+                                Marshal.FreeHGlobal(infosIntPtr);
+                        }
 
                         var response = new FullRightFourFingersResponse
                         {
@@ -1699,12 +1758,12 @@ namespace FingerprintWebAPI.Services
                             Message = "Full right four fingers captured successfully"
                         };
 
-                        // Create ISO template if requested
+                        // Create ISO template if requested (using best quality finger)
                         if (request.Format.ToUpper() == "ISO" || request.Format.ToUpper() == "BOTH")
                         {
-                            _logger.LogInformation("Creating ISO template for full right four fingers...");
+                            _logger.LogInformation("Creating ISO template from best finger ({BestFinger})...", bestFingerName);
                             byte[] isoTemplate = new byte[1024];
-                            int isoResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateISOTemplate(_fpDevice, centerImageData, isoTemplate);
+                            int isoResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateISOTemplate(_fpDevice, bestFingerData, isoTemplate);
                             _logger.LogInformation("ISO template creation result: {Result}", isoResult);
                             
                             if (isoResult != 0)
@@ -1723,12 +1782,12 @@ namespace FingerprintWebAPI.Services
                             }
                         }
 
-                        // Create ANSI template if requested
+                        // Create ANSI template if requested (using best quality finger)
                         if (request.Format.ToUpper() == "ANSI" || request.Format.ToUpper() == "BOTH")
                         {
-                            _logger.LogInformation("Creating ANSI template for full right four fingers...");
+                            _logger.LogInformation("Creating ANSI template from best finger ({BestFinger})...", bestFingerName);
                             byte[] ansiTemplate = new byte[1024];
-                            int ansiResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateANSITemplate(_fpDevice, centerImageData, ansiTemplate);
+                            int ansiResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateANSITemplate(_fpDevice, bestFingerData, ansiTemplate);
                             _logger.LogInformation("ANSI template creation result: {Result}", ansiResult);
                             
                             if (ansiResult != 0)
