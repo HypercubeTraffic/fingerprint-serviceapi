@@ -136,6 +136,10 @@ namespace FingerprintWebAPI.Hubs
                         await HandleCaptureRightFourTemplates(command);
                         break;
 
+                    case "capture_full_right_four":
+                        await HandleCaptureFullRightFour(command);
+                        break;
+
                     default:
                         await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
                         {
@@ -631,6 +635,39 @@ namespace FingerprintWebAPI.Hubs
                 {
                     Type = "error",
                     Data = new { message = $"Error capturing right four fingers templates: {ex.Message}" }
+                });
+            }
+        }
+
+        // NEW CUSTOM ENDPOINT HANDLER FOR FULL RIGHT FOUR FINGERS
+        private async Task HandleCaptureFullRightFour(dynamic command)
+        {
+            try
+            {
+                var request = new FullRightFourFingersRequest
+                {
+                    Format = command?.format ?? "BOTH",
+                    Channel = command?.channel ?? 0,
+                    Width = command?.width ?? 1600,
+                    Height = command?.height ?? 1500,
+                    MinQuality = command?.minQuality ?? 30
+                };
+
+                var result = await _fingerprintService.CaptureFullRightFourFingersAsync(request);
+
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "full_right_four_result",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing full right four fingers template");
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "error",
+                    Data = new { message = $"Error capturing full right four fingers template: {ex.Message}" }
                 });
             }
         }

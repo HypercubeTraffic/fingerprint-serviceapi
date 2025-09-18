@@ -1591,6 +1591,174 @@ namespace FingerprintWebAPI.Services
             });
         }
 
+        // NEW CUSTOM METHOD FOR FULL RIGHT FOUR FINGERS AS ONE TEMPLATE
+        public async Task<FullRightFourFingersResponse> CaptureFullRightFourFingersAsync(FullRightFourFingersRequest request)
+        {
+            return await Task.Run(() =>
+            {
+                lock (_lockObject)
+                {
+                    try
+                    {
+                        if (!_isDeviceConnected)
+                        {
+                            return new FullRightFourFingersResponse
+                            {
+                                Success = false,
+                                Message = "Device not connected"
+                            };
+                        }
+
+                        if (_fpDevice == 0)
+                        {
+                            return new FullRightFourFingersResponse
+                            {
+                                Success = false,
+                                Message = "Fingerprint algorithm device not initialized for template creation"
+                            };
+                        }
+
+                        _logger.LogInformation("Capturing full right four fingers template: Format={Format}, {Width}x{Height} on channel {Channel}", 
+                            request.Format, request.Width, request.Height, request.Channel);
+
+                        // Set LED for right four fingers
+                        FingerprintDllWrapper.LIVESCAN_SetLedLight(3); // Right four fingers LED
+                        FingerprintDllWrapper.LIVESCAN_Beep(1); // Audio indication
+                        _logger.LogInformation("LED and beep set for full right four fingers");
+
+                        // Set capture window
+                        FingerprintDllWrapper.LIVESCAN_SetCaptWindow(request.Channel, 0, 0, request.Width, request.Height);
+                        _logger.LogInformation("Capture window set: {Width}x{Height}", request.Width, request.Height);
+
+                        // Capture raw data - Use w*h*2 for template operations
+                        byte[] rawData = new byte[request.Width * request.Height * 2];
+                        int result = FingerprintDllWrapper.LIVESCAN_GetFPRawData(request.Channel, rawData);
+                        _logger.LogInformation("Raw data capture result: {Result}, Buffer size: {Size}", result, rawData.Length);
+                        
+                        if (result != 1)
+                        {
+                            _logger.LogError("Failed to capture fingerprint data, result: {Result}", result);
+                            return new FullRightFourFingersResponse
+                            {
+                                Success = false,
+                                Message = $"Failed to capture fingerprint data: {result}"
+                            };
+                        }
+
+                        // Check overall quality
+                        int overallQuality = FingerprintDllWrapper.MOSAIC_FingerQuality(rawData, request.Width, request.Height);
+                        _logger.LogInformation("Overall image quality: {Quality}", overallQuality);
+                        
+                        if (overallQuality < request.MinQuality)
+                        {
+                            _logger.LogWarning("Poor image quality detected: {Quality}", overallQuality);
+                            return new FullRightFourFingersResponse
+                            {
+                                Success = false,
+                                Message = $"Poor image quality: {overallQuality} (minimum: {request.MinQuality})"
+                            };
+                        }
+
+                        // Apply image enhancements
+                        _logger.LogInformation("Applying image enhancements...");
+                        FingerprintDllWrapper.ApplyImageEnhancement(rawData, request.Width, request.Height);
+                        FingerprintDllWrapper.FlipImageVertically(rawData, request.Width, request.Height);
+                        _logger.LogInformation("Image enhancements applied");
+
+                        // Create BMP for full image
+                        byte[] fullImageBmp = new byte[1078 + request.Width * request.Height];
+                        FingerprintDllWrapper.WriteHead(fullImageBmp, rawData, request.Width, request.Height);
+                        string fullImageBase64 = Convert.ToBase64String(fullImageBmp);
+
+                        // Create templates directly from the full image (no splitting)
+                        var response = new FullRightFourFingersResponse
+                        {
+                            Success = true,
+                            OverallQuality = overallQuality,
+                            ImageData = fullImageBase64,
+                            Message = "Full right four fingers captured successfully"
+                        };
+
+                        // Create ISO template if requested
+                        if (request.Format.ToUpper() == "ISO" || request.Format.ToUpper() == "BOTH")
+                        {
+                            _logger.LogInformation("Creating ISO template for full right four fingers...");
+                            byte[] isoTemplate = new byte[1024];
+                            int isoResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateISOTemplate(_fpDevice, rawData, isoTemplate);
+                            _logger.LogInformation("ISO template creation result: {Result}", isoResult);
+                            
+                            if (isoResult != 0)
+                            {
+                                response.IsoTemplate = new TemplateData
+                                {
+                                    Data = Convert.ToBase64String(isoTemplate),
+                                    Size = 1024,
+                                    Quality = overallQuality
+                                };
+                                _logger.LogInformation("ISO template created successfully for full right four fingers");
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to create ISO template for full right four fingers");
+                            }
+                        }
+
+                        // Create ANSI template if requested
+                        if (request.Format.ToUpper() == "ANSI" || request.Format.ToUpper() == "BOTH")
+                        {
+                            _logger.LogInformation("Creating ANSI template for full right four fingers...");
+                            byte[] ansiTemplate = new byte[1024];
+                            int ansiResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateANSITemplate(_fpDevice, rawData, ansiTemplate);
+                            _logger.LogInformation("ANSI template creation result: {Result}", ansiResult);
+                            
+                            if (ansiResult != 0)
+                            {
+                                response.AnsiTemplate = new TemplateData
+                                {
+                                    Data = Convert.ToBase64String(ansiTemplate),
+                                    Size = 1024,
+                                    Quality = overallQuality
+                                };
+                                _logger.LogInformation("ANSI template created successfully for full right four fingers");
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to create ANSI template for full right four fingers");
+                            }
+                        }
+
+                        // Check if any templates were created
+                        bool hasTemplates = (response.IsoTemplate != null) || (response.AnsiTemplate != null);
+                        if (!hasTemplates)
+                        {
+                            response.Success = false;
+                            response.Message = "Failed to create any templates from the captured image";
+                            return response;
+                        }
+
+                        // Set success LED indication
+                        FingerprintDllWrapper.LIVESCAN_SetLedLight(17); // Success LED
+                        FingerprintDllWrapper.LIVESCAN_Beep(1); // Success beep
+
+                        response.Message = $"Successfully created {request.Format} template(s) for full right four fingers";
+                        _logger.LogInformation("Full right four fingers template capture completed successfully");
+
+                        return response;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error capturing full right four fingers template");
+                        return new FullRightFourFingersResponse
+                        {
+                            Success = false,
+                            Message = $"Error capturing full right four fingers template: {ex.Message}",
+                            ErrorDetails = ex.ToString()
+                        };
+                    }
+                }
+            });
+        }
+
         public void Dispose()
         {
             CloseAsync().Wait();

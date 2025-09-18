@@ -49,6 +49,7 @@ class FingerprintPreview {
         
         // NEW CUSTOM ENDPOINT ELEMENTS
         this.captureRightFourTemplatesBtn = document.getElementById('captureRightFourTemplatesBtn');
+        this.captureFullRightFourBtn = document.getElementById('captureFullRightFourBtn');
         
         this.channelSelect = document.getElementById('channelSelect');
         this.widthInput = document.getElementById('widthInput');
@@ -95,6 +96,11 @@ class FingerprintPreview {
         this.rightFourOverallQuality = document.getElementById('rightFourOverallQuality');
         this.rightFourTemplateStatus = document.getElementById('rightFourTemplateStatus');
         this.rightFourFingersDetails = document.getElementById('rightFourFingersDetails');
+        
+        // FULL RIGHT FOUR TEMPLATE ELEMENTS
+        this.fullRightFourFormat = document.getElementById('fullRightFourFormat');
+        this.fullRightFourQuality = document.getElementById('fullRightFourQuality');
+        this.fullRightFourStatus = document.getElementById('fullRightFourStatus');
 
         // Store current template and split data
         this.currentTemplate = null;
@@ -106,6 +112,7 @@ class FingerprintPreview {
         
         // NEW CUSTOM ENDPOINT DATA
         this.currentRightFourTemplatesResult = null;
+        this.currentFullRightFourResult = null;
     }
 
     setupEventListeners() {
@@ -136,6 +143,7 @@ class FingerprintPreview {
         
         // NEW CUSTOM ENDPOINT EVENT LISTENERS
         this.captureRightFourTemplatesBtn.addEventListener('click', () => this.captureRightFourTemplates());
+        this.captureFullRightFourBtn.addEventListener('click', () => this.captureFullRightFour());
         
         this.fingerTypeSelect.addEventListener('change', () => this.setFingerDryWet());
     }
@@ -261,8 +269,9 @@ class FingerprintPreview {
                 this.captureTwoThumbsDirectBtn.disabled = false;
                 this.playBeepBtn.disabled = false;
                 
-                // Enable new custom endpoint button
+                // Enable new custom endpoint buttons
                 this.captureRightFourTemplatesBtn.disabled = false;
+                this.captureFullRightFourBtn.disabled = false;
                 break;
 
             case 'preview_stopped':
@@ -286,8 +295,9 @@ class FingerprintPreview {
                 this.captureTwoThumbsDirectBtn.disabled = true;
                 this.playBeepBtn.disabled = true;
                 
-                // Disable new custom endpoint button
+                // Disable new custom endpoint buttons
                 this.captureRightFourTemplatesBtn.disabled = true;
+                this.captureFullRightFourBtn.disabled = true;
                 break;
 
             case 'preview':
@@ -333,6 +343,10 @@ class FingerprintPreview {
 
                 case 'right_four_templates_result':
                     this.handleRightFourTemplatesResult(data);
+                    break;
+
+                case 'full_right_four_result':
+                    this.handleFullRightFourResult(data);
                     break;
 
             case 'status':
@@ -1286,6 +1300,115 @@ class FingerprintPreview {
         });
 
         this.log(`Downloaded ${downloadCount} image files`, 'success');
+    }
+
+    // NEW: FULL RIGHT FOUR FINGERS TEMPLATE CAPTURE
+    async captureFullRightFour() {
+        if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+            this.log('Not connected to server', 'error');
+            return;
+        }
+
+        try {
+            this.log('Starting full right four fingers template capture...', 'info');
+            
+            // Disable buttons during capture
+            this.captureFullRightFourBtn.disabled = true;
+            this.captureRightFourTemplatesBtn.disabled = true;
+            this.fullRightFourStatus.textContent = 'Capturing...';
+
+            const format = this.templateFormatSelect.value;
+            const channel = parseInt(this.channelSelect.value);
+            const width = parseInt(this.widthInput.value);
+            const height = parseInt(this.heightInput.value);
+
+            const message = {
+                command: 'capture_full_right_four',
+                format: format,
+                channel: channel,
+                width: width,
+                height: height,
+                minQuality: 20  // Lower threshold to be more permissive
+            };
+            
+            this.log(`Sending full capture command: Format=${format}, MinQuality=20`, 'info');
+
+            await this.connection.invoke("SendMessage", JSON.stringify(message));
+        } catch (err) {
+            this.fullRightFourStatus.textContent = 'Error';
+            this.log('Error capturing full right four fingers template: ' + err, 'error');
+        } finally {
+            // Re-enable buttons after capture
+            this.captureFullRightFourBtn.disabled = false;
+            this.captureRightFourTemplatesBtn.disabled = false;
+        }
+    }
+
+    handleFullRightFourResult(data) {
+        console.log('Full right four template result:', data); // Debug logging
+        
+        if (data.success) {
+            this.currentFullRightFourResult = data;
+            this.updateFullRightFourUI(data);
+            
+            // Check what templates were created
+            const hasIso = data.isoTemplate != null;
+            const hasAnsi = data.ansiTemplate != null;
+            const templateInfo = hasIso && hasAnsi ? 'BOTH' : hasIso ? 'ISO' : hasAnsi ? 'ANSI' : 'None';
+            
+            this.log(`Full right four fingers template captured successfully! Format: ${templateInfo}, Quality: ${data.overallQuality}`, 'success');
+            
+            // Display full image if available
+            if (data.imageData) {
+                this.displayImage(data.imageData);
+            }
+            
+            // AUTOMATIC DOWNLOAD of the combined template
+            if (hasIso || hasAnsi) {
+                this.log('🚀 Auto-downloading full template...', 'info');
+                this.downloadFullRightFourTemplate();
+            }
+            
+            // Play success sound
+            this.playBeep();
+        } else {
+            this.fullRightFourStatus.textContent = 'Failed';
+            this.log(`Failed to capture full right four fingers template: ${data.message}`, 'error');
+        }
+    }
+
+    updateFullRightFourUI(result) {
+        const hasIso = result.isoTemplate != null;
+        const hasAnsi = result.ansiTemplate != null;
+        this.fullRightFourFormat.textContent = hasIso && hasAnsi ? 'BOTH' : hasIso ? 'ISO' : hasAnsi ? 'ANSI' : 'None';
+        this.fullRightFourQuality.textContent = result.overallQuality || 0;
+        this.fullRightFourStatus.textContent = result.success ? 'Success' : 'Failed';
+    }
+
+    downloadFullRightFourTemplate() {
+        if (!this.currentFullRightFourResult) {
+            this.log('No full right four template to download', 'warning');
+            return;
+        }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        let downloadCount = 0;
+
+        if (this.currentFullRightFourResult.isoTemplate) {
+            const filename = `full_right_four_ISO_template_${timestamp}.dat`;
+            this.downloadBinaryData(this.currentFullRightFourResult.isoTemplate.data, filename);
+            downloadCount++;
+            this.log(`📄 Downloaded full ISO template: ${filename}`, 'success');
+        }
+        
+        if (this.currentFullRightFourResult.ansiTemplate) {
+            const filename = `full_right_four_ANSI_template_${timestamp}.dat`;
+            this.downloadBinaryData(this.currentFullRightFourResult.ansiTemplate.data, filename);
+            downloadCount++;
+            this.log(`📄 Downloaded full ANSI template: ${filename}`, 'success');
+        }
+
+        this.log(`Downloaded ${downloadCount} full template files`, 'success');
     }
 
     log(message, type = 'info') {

@@ -342,8 +342,9 @@
                 <!-- NEW: Dedicated two thumbs capture -->
                 <button id="captureTwoThumbsDirectBtn" class="btn" disabled>Capture Two Thumbs (Direct)</button>
                 
-                <!-- NEW CUSTOM ENDPOINT: Right Four Fingers Templates -->
-                <button id="captureRightFourTemplatesBtn" class="btn" disabled style="background-color: #4CAF50; color: white; font-weight: bold;">🔧 Capture Right Four Templates (Custom)</button>
+                <!-- NEW CUSTOM ENDPOINTS: Right Four Fingers Templates -->
+                <button id="captureRightFourTemplatesBtn" class="btn" disabled style="background-color: #4CAF50; color: white; font-weight: bold;">🔧 Right Four Templates (Individual)</button>
+                <button id="captureFullRightFourBtn" class="btn" disabled style="background-color: #2196F3; color: white; font-weight: bold;">📄 Full Right Four Template</button>
                 
                 <!-- Split buttons -->
                 <button id="splitTwoThumbsBtn" class="btn" disabled>Split Two Thumbs</button>
@@ -507,6 +508,19 @@
                 </div>
                 <div style="margin-top: 10px; font-size: 11px; color: #666;">
                     📄 Fingerprint templates (ISO/ANSI .dat files) will be automatically downloaded when captured
+                </div>
+            </div>
+
+            <!-- NEW: FULL RIGHT FOUR FINGERS TEMPLATE SECTION -->
+            <div class="full-right-four-section" style="margin-top: 15px; padding: 15px; background: #f0f8ff; border: 1px solid #87ceeb;">
+                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">📄 Full Right Four Template</h4>
+                <div id="fullRightFourInfo" style="font-size: 12px; color: #666;">
+                    <div>Template Format: <span id="fullRightFourFormat">BOTH</span></div>
+                    <div>Overall Quality: <span id="fullRightFourQuality">0</span></div>
+                    <div>Status: <span id="fullRightFourStatus">Ready</span></div>
+                </div>
+                <div style="margin-top: 10px; font-size: 11px; color: #666;">
+                    📄 Combined template (ISO/ANSI .dat files) will be automatically downloaded when captured
                 </div>
             </div>
         </div>

@@ -302,4 +302,35 @@ namespace FingerprintWebAPI.Models
         public int SplitHeight { get; set; } = 360;
         public int MinQuality { get; set; } = 30;
     }
+
+    // NEW: FULL RIGHT FOUR FINGERS AS ONE TEMPLATE
+    public class FullRightFourFingersRequest
+    {
+        public string Format { get; set; } = "BOTH"; // ISO, ANSI, or BOTH
+        public int Channel { get; set; } = 0;
+        public int Width { get; set; } = 1600;
+        public int Height { get; set; } = 1500;
+        public int MinQuality { get; set; } = 30;
+    }
+
+    public class FullRightFourFingersResponse
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public int OverallQuality { get; set; }
+        public string? ImageData { get; set; } // Full capture image
+        public TemplateData? IsoTemplate { get; set; } // Combined template
+        public TemplateData? AnsiTemplate { get; set; } // Combined template
+        public string? ErrorDetails { get; set; }
+    }
+
+    public class FullRightFourFingersCommand
+    {
+        public string Command { get; set; } = "capture_full_right_four";
+        public string Format { get; set; } = "BOTH";
+        public int Channel { get; set; } = 0;
+        public int Width { get; set; } = 1600;
+        public int Height { get; set; } = 1500;
+        public int MinQuality { get; set; } = 30;
+    }
 }

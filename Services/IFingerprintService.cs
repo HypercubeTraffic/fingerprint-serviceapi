@@ -30,6 +30,9 @@ namespace FingerprintWebAPI.Services
         // NEW CUSTOM METHOD FOR RIGHT FOUR FINGERS TEMPLATE CAPTURE
         Task<RightFourFingersTemplateResponse> CaptureRightFourFingersTemplatesAsync(RightFourFingersTemplateRequest request);
         
+        // NEW CUSTOM METHOD FOR FULL RIGHT FOUR FINGERS AS ONE TEMPLATE
+        Task<FullRightFourFingersResponse> CaptureFullRightFourFingersAsync(FullRightFourFingersRequest request);
+        
         bool IsDeviceConnected { get; }
         bool IsInitialized { get; }
     }

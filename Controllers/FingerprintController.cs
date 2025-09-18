@@ -404,7 +404,7 @@ namespace FingerprintWebAPI.Controllers
         }
 
         /// <summary>
-        /// NEW CUSTOM ENDPOINT: Capture right four fingers as ISO/ANSI templates
+        /// NEW CUSTOM ENDPOINT: Capture right four fingers as ISO/ANSI templates (individual fingers)
         /// This endpoint captures the right four fingers and creates templates in the specified format
         /// </summary>
         [HttpPost("capture/right-four-templates")]
@@ -422,6 +422,28 @@ namespace FingerprintWebAPI.Controllers
             {
                 _logger.LogError(ex, "Error capturing right four fingers templates");
                 return StatusCode(500, $"Error capturing right four fingers templates: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// NEW CUSTOM ENDPOINT: Capture full right four fingers as one combined template
+        /// This endpoint captures the right four fingers as a single combined template (no splitting)
+        /// </summary>
+        [HttpPost("capture/full-right-four")]
+        public async Task<ActionResult<FullRightFourFingersResponse>> CaptureFullRightFourFingers([FromBody] FullRightFourFingersRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Full right four fingers template capture request: Format={Format}, {Width}x{Height} on channel {Channel}, MinQuality={MinQuality}", 
+                    request.Format, request.Width, request.Height, request.Channel, request.MinQuality);
+                
+                var result = await _fingerprintService.CaptureFullRightFourFingersAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing full right four fingers template");
+                return StatusCode(500, $"Error capturing full right four fingers template: {ex.Message}");
             }
         }
     }
