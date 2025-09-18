@@ -65,10 +65,9 @@ try
         app.UseSwaggerUI();
     }
 
-    // Only use HTTPS redirection for localhost connections
-    // Network clients typically use HTTP for fingerprint devices
-    var urls = builder.Configuration["ASPNETCORE_URLS"] ?? "";
-    if (urls.Contains("localhost") && !urls.Contains("192.168."))
+    // Only use HTTPS redirection when not binding to all interfaces
+    // When using 0.0.0.0, external clients may not have HTTPS available
+    if (!args.Any(arg => arg.Contains("0.0.0.0")))
     {
         app.UseHttpsRedirection();
     }

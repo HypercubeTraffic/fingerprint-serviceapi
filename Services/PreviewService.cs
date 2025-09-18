@@ -230,23 +230,21 @@ namespace FingerprintWebAPI.Services
         {
             try
             {
-                // Check if we're serving on network IP (192.168.x.x) in addition to localhost
-                var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "";
-                var isServingNetwork = urls.Contains("192.168.") || urls.Contains("0.0.0.0");
+                // Simple heuristic: if we have active network connections that aren't localhost, 
+                // we're likely serving over network
+                _isNetworkConnection = _webSocketService.HasActiveConnections && 
+                                     Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.Contains("0.0.0.0") == true;
                 
-                // For dual binding (localhost + network IP), we'll use adaptive mode
-                // This provides good performance for localhost while being network-friendly
-                if (isServingNetwork && _webSocketService.HasActiveConnections)
+                // Adjust frame rate based on connection type
+                if (_isNetworkConnection)
                 {
-                    _isNetworkConnection = true;
-                    _adaptiveDelay = 40; // 25 FPS - balanced for both localhost and network
-                    _logger.LogInformation("Dual binding detected (localhost + 192.168.100.162) - using balanced performance mode");
+                    _adaptiveDelay = 50; // 20 FPS for network connections
+                    _logger.LogInformation("Network connection detected - using adaptive performance mode");
                 }
                 else
                 {
-                    _isNetworkConnection = false;
-                    _adaptiveDelay = 33; // 30 FPS for localhost only
-                    _logger.LogInformation("Localhost-only connection - using high performance mode");
+                    _adaptiveDelay = 33; // 30 FPS for localhost
+                    _logger.LogInformation("Local connection detected - using high performance mode");
                 }
             }
             catch (Exception ex)
