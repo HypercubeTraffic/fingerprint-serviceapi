@@ -27,6 +27,9 @@ namespace FingerprintWebAPI.Services
         Task<string?> GetStoredTemplateAsync(string templateId);
         Task<bool> ClearStoredTemplatesAsync();
         
+        // NEW CUSTOM METHOD FOR RIGHT FOUR FINGERS TEMPLATE CAPTURE
+        Task<RightFourFingersTemplateResponse> CaptureRightFourFingersTemplatesAsync(RightFourFingersTemplateRequest request);
+        
         bool IsDeviceConnected { get; }
         bool IsInitialized { get; }
     }

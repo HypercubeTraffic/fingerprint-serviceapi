@@ -132,6 +132,10 @@ namespace FingerprintWebAPI.Hubs
                         await HandleCaptureTwoThumbs(command);
                         break;
 
+                    case "capture_right_four_templates":
+                        await HandleCaptureRightFourTemplates(command);
+                        break;
+
                     default:
                         await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
                         {
@@ -592,6 +596,41 @@ namespace FingerprintWebAPI.Hubs
                 {
                     Type = "error",
                     Data = new { message = $"Error capturing two thumbs: {ex.Message}" }
+                });
+            }
+        }
+
+        // NEW CUSTOM ENDPOINT HANDLER
+        private async Task HandleCaptureRightFourTemplates(dynamic command)
+        {
+            try
+            {
+                var request = new RightFourFingersTemplateRequest
+                {
+                    Format = command?.format ?? "BOTH",
+                    Channel = command?.channel ?? 0,
+                    Width = command?.width ?? 1600,
+                    Height = command?.height ?? 1500,
+                    SplitWidth = command?.splitWidth ?? 256,
+                    SplitHeight = command?.splitHeight ?? 360,
+                    MinQuality = command?.minQuality ?? 30
+                };
+
+                var result = await _fingerprintService.CaptureRightFourFingersTemplatesAsync(request);
+
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "right_four_templates_result",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing right four fingers templates");
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "error",
+                    Data = new { message = $"Error capturing right four fingers templates: {ex.Message}" }
                 });
             }
         }

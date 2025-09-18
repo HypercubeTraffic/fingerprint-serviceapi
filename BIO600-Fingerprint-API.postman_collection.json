@@ -210,6 +210,27 @@
               "path": ["api", "fingerprint", "compare"]
             }
           }
+        },
+        {
+          "name": "Capture Right Four Fingers Templates (Custom)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"BOTH\",\n  \"channel\": 0,\n  \"width\": 1600,\n  \"height\": 1500,\n  \"splitWidth\": 256,\n  \"splitHeight\": 360,\n  \"minQuality\": 30\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fingerprint/capture/right-four-templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fingerprint", "capture", "right-four-templates"]
+            }
+          }
         }
       ]
     },

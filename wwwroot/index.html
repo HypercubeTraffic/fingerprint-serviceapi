@@ -342,6 +342,9 @@
                 <!-- NEW: Dedicated two thumbs capture -->
                 <button id="captureTwoThumbsDirectBtn" class="btn" disabled>Capture Two Thumbs (Direct)</button>
                 
+                <!-- NEW CUSTOM ENDPOINT: Right Four Fingers Templates -->
+                <button id="captureRightFourTemplatesBtn" class="btn" disabled>Capture Right Four Templates</button>
+                
                 <!-- Split buttons -->
                 <button id="splitTwoThumbsBtn" class="btn" disabled>Split Two Thumbs</button>
                 <button id="splitFourRightBtn" class="btn" disabled>Split Four Right Fingers</button>
@@ -487,6 +490,24 @@
                 </div>
                 <div style="margin-top: 10px;">
                     <button id="downloadRollBtn" class="btn" disabled style="width: 100%; font-size: 11px;">Download Roll Image</button>
+                </div>
+            </div>
+
+            <!-- NEW CUSTOM: RIGHT FOUR FINGERS TEMPLATES SECTION -->
+            <div class="right-four-templates-section" style="margin-top: 15px; padding: 15px; background: #f5f5dc; border: 1px solid #d0d0d0;">
+                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Right Four Fingers Templates</h4>
+                <div id="rightFourTemplatesInfo" style="font-size: 12px; color: #666;">
+                    <div>Detected Fingers: <span id="rightFourFingerCount">0</span></div>
+                    <div>Template Format: <span id="rightFourTemplateFormat">BOTH</span></div>
+                    <div>Overall Quality: <span id="rightFourOverallQuality">0</span></div>
+                    <div>Status: <span id="rightFourTemplateStatus">Ready</span></div>
+                </div>
+                <div id="rightFourFingersDetails" style="margin-top: 10px; font-size: 11px; color: #555;">
+                    <!-- Individual finger details will be populated here -->
+                </div>
+                <div style="margin-top: 10px;">
+                    <button id="downloadRightFourTemplatesBtn" class="btn" disabled style="width: 48%; font-size: 11px; margin-right: 2%;">Download Templates</button>
+                    <button id="downloadRightFourImagesBtn" class="btn" disabled style="width: 48%; font-size: 11px;">Download Images</button>
                 </div>
             </div>
         </div>

@@ -402,5 +402,27 @@ namespace FingerprintWebAPI.Controllers
                 return StatusCode(500, $"Error capturing two thumbs: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// NEW CUSTOM ENDPOINT: Capture right four fingers as ISO/ANSI templates
+        /// This endpoint captures the right four fingers and creates templates in the specified format
+        /// </summary>
+        [HttpPost("capture/right-four-templates")]
+        public async Task<ActionResult<RightFourFingersTemplateResponse>> CaptureRightFourFingersTemplates([FromBody] RightFourFingersTemplateRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Right four fingers template capture request: Format={Format}, {Width}x{Height} on channel {Channel}, MinQuality={MinQuality}", 
+                    request.Format, request.Width, request.Height, request.Channel, request.MinQuality);
+                
+                var result = await _fingerprintService.CaptureRightFourFingersTemplatesAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing right four fingers templates");
+                return StatusCode(500, $"Error capturing right four fingers templates: {ex.Message}");
+            }
+        }
     }
 }

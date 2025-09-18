@@ -252,4 +252,54 @@ namespace FingerprintWebAPI.Models
         public int Width { get; set; } = 1600;
         public int Height { get; set; } = 1500;
     }
+
+    // NEW CUSTOM MODELS FOR RIGHT FOUR FINGERS TEMPLATE CAPTURE
+    public class RightFourFingersTemplateRequest
+    {
+        public string Format { get; set; } = "BOTH"; // ISO, ANSI, or BOTH
+        public int Channel { get; set; } = 0;
+        public int Width { get; set; } = 1600;
+        public int Height { get; set; } = 1500;
+        public int SplitWidth { get; set; } = 256;
+        public int SplitHeight { get; set; } = 360;
+        public int MinQuality { get; set; } = 30; // Minimum quality threshold for each finger
+    }
+
+    public class RightFourFingersTemplateResponse
+    {
+        public bool Success { get; set; }
+        public int DetectedFingerCount { get; set; }
+        public string? Message { get; set; }
+        public List<FingerTemplateData> FingerTemplates { get; set; } = new();
+        public string? ErrorDetails { get; set; }
+        public int OverallQuality { get; set; }
+        public string? ImageData { get; set; } // Full capture image
+    }
+
+    public class FingerTemplateData
+    {
+        public string FingerName { get; set; } = string.Empty; // right_index, right_middle, right_ring, right_little
+        public int FingerIndex { get; set; } // 0=index, 1=middle, 2=ring, 3=little
+        public int Quality { get; set; }
+        public string? ImageData { get; set; } // Individual finger image
+        public TemplateData? IsoTemplate { get; set; }
+        public TemplateData? AnsiTemplate { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Top { get; set; }
+        public int Left { get; set; }
+        public int Angle { get; set; }
+    }
+
+    public class RightFourFingersTemplateCommand
+    {
+        public string Command { get; set; } = "capture_right_four_templates";
+        public string Format { get; set; } = "BOTH";
+        public int Channel { get; set; } = 0;
+        public int Width { get; set; } = 1600;
+        public int Height { get; set; } = 1500;
+        public int SplitWidth { get; set; } = 256;
+        public int SplitHeight { get; set; } = 360;
+        public int MinQuality { get; set; } = 30;
+    }
 }

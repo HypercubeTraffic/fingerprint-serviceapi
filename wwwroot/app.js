@@ -47,6 +47,11 @@ class FingerprintPreview {
         this.storeTemplate2Btn = document.getElementById('storeTemplate2Btn');
         this.downloadRollBtn = document.getElementById('downloadRollBtn');
         
+        // NEW CUSTOM ENDPOINT ELEMENTS
+        this.captureRightFourTemplatesBtn = document.getElementById('captureRightFourTemplatesBtn');
+        this.downloadRightFourTemplatesBtn = document.getElementById('downloadRightFourTemplatesBtn');
+        this.downloadRightFourImagesBtn = document.getElementById('downloadRightFourImagesBtn');
+        
         this.channelSelect = document.getElementById('channelSelect');
         this.widthInput = document.getElementById('widthInput');
         this.heightInput = document.getElementById('heightInput');
@@ -85,6 +90,13 @@ class FingerprintPreview {
         this.rollSize = document.getElementById('rollSize');
         this.rollQuality = document.getElementById('rollQuality');
         this.rollStatus = document.getElementById('rollStatus');
+        
+        // NEW CUSTOM ENDPOINT STATUS ELEMENTS
+        this.rightFourFingerCount = document.getElementById('rightFourFingerCount');
+        this.rightFourTemplateFormat = document.getElementById('rightFourTemplateFormat');
+        this.rightFourOverallQuality = document.getElementById('rightFourOverallQuality');
+        this.rightFourTemplateStatus = document.getElementById('rightFourTemplateStatus');
+        this.rightFourFingersDetails = document.getElementById('rightFourFingersDetails');
 
         // Store current template and split data
         this.currentTemplate = null;
@@ -93,6 +105,9 @@ class FingerprintPreview {
         this.currentRollResult = null;
         this.storedTemplate1 = null;
         this.storedTemplate2 = null;
+        
+        // NEW CUSTOM ENDPOINT DATA
+        this.currentRightFourTemplatesResult = null;
     }
 
     setupEventListeners() {
@@ -120,6 +135,12 @@ class FingerprintPreview {
         this.storeTemplate1Btn.addEventListener('click', () => this.storeTemplate(1));
         this.storeTemplate2Btn.addEventListener('click', () => this.storeTemplate(2));
         this.downloadRollBtn.addEventListener('click', () => this.downloadRollImage());
+        
+        // NEW CUSTOM ENDPOINT EVENT LISTENERS
+        this.captureRightFourTemplatesBtn.addEventListener('click', () => this.captureRightFourTemplates());
+        this.downloadRightFourTemplatesBtn.addEventListener('click', () => this.downloadRightFourTemplates());
+        this.downloadRightFourImagesBtn.addEventListener('click', () => this.downloadRightFourImages());
+        
         this.fingerTypeSelect.addEventListener('change', () => this.setFingerDryWet());
     }
 
@@ -243,6 +264,9 @@ class FingerprintPreview {
                 this.captureTwoThumbsBtn.disabled = false;
                 this.captureTwoThumbsDirectBtn.disabled = false;
                 this.playBeepBtn.disabled = false;
+                
+                // Enable new custom endpoint button
+                this.captureRightFourTemplatesBtn.disabled = false;
                 break;
 
             case 'preview_stopped':
@@ -265,6 +289,9 @@ class FingerprintPreview {
                 this.captureTwoThumbsBtn.disabled = true;
                 this.captureTwoThumbsDirectBtn.disabled = true;
                 this.playBeepBtn.disabled = true;
+                
+                // Disable new custom endpoint button
+                this.captureRightFourTemplatesBtn.disabled = true;
                 break;
 
             case 'preview':
@@ -1080,6 +1107,153 @@ class FingerprintPreview {
         const filename = `roll_fingerprint_${timestamp}.bmp`;
         this.downloadImage(this.currentRollResult.imageData, filename);
         this.log(`Downloaded roll image: ${filename}`, 'success');
+    }
+
+    // NEW CUSTOM ENDPOINT METHODS
+    async captureRightFourTemplates() {
+        if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+            this.log('Not connected to server', 'error');
+            return;
+        }
+
+        try {
+            this.log('Starting right four fingers template capture...', 'info');
+            this.setButtonsEnabled(false);
+            this.rightFourTemplateStatus.textContent = 'Capturing...';
+
+            const format = this.templateFormatSelect.value;
+            const channel = parseInt(this.channelSelect.value);
+            const width = parseInt(this.widthInput.value);
+            const height = parseInt(this.heightInput.value);
+            const splitWidth = parseInt(this.splitWidthInput.value);
+            const splitHeight = parseInt(this.splitHeightInput.value);
+
+            const request = {
+                format: format,
+                channel: channel,
+                width: width,
+                height: height,
+                splitWidth: splitWidth,
+                splitHeight: splitHeight,
+                minQuality: 30
+            };
+
+            const response = await fetch('/api/fingerprint/capture/right-four-templates', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(request)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.currentRightFourTemplatesResult = result;
+                this.updateRightFourTemplatesUI(result);
+                this.log(`Right four fingers templates captured successfully! Format: ${format}, Fingers: ${result.detectedFingerCount}`, 'success');
+                
+                // Display full image if available
+                if (result.imageData) {
+                    this.displayImage(result.imageData);
+                }
+            } else {
+                this.rightFourTemplateStatus.textContent = 'Failed';
+                this.log(`Failed to capture right four fingers templates: ${result.message}`, 'error');
+            }
+        } catch (err) {
+            this.rightFourTemplateStatus.textContent = 'Error';
+            this.log('Error capturing right four fingers templates: ' + err, 'error');
+        } finally {
+            this.setButtonsEnabled(true);
+        }
+    }
+
+    updateRightFourTemplatesUI(result) {
+        this.rightFourFingerCount.textContent = result.detectedFingerCount || 0;
+        this.rightFourTemplateFormat.textContent = result.fingerTemplates?.[0]?.isoTemplate && result.fingerTemplates?.[0]?.ansiTemplate ? 'BOTH' : 
+                                                   result.fingerTemplates?.[0]?.isoTemplate ? 'ISO' : 
+                                                   result.fingerTemplates?.[0]?.ansiTemplate ? 'ANSI' : 'None';
+        this.rightFourOverallQuality.textContent = result.overallQuality || 0;
+        this.rightFourTemplateStatus.textContent = result.success ? 'Success' : 'Failed';
+
+        // Enable download buttons if we have data
+        this.downloadRightFourTemplatesBtn.disabled = !result.success || !result.fingerTemplates?.length;
+        this.downloadRightFourImagesBtn.disabled = !result.success || !result.fingerTemplates?.length;
+
+        // Display individual finger details
+        if (result.fingerTemplates && result.fingerTemplates.length > 0) {
+            let detailsHtml = '<div style="margin-top: 5px; font-weight: bold;">Individual Fingers:</div>';
+            
+            result.fingerTemplates.forEach((finger, index) => {
+                const hasIso = finger.isoTemplate ? '✓' : '✗';
+                const hasAnsi = finger.ansiTemplate ? '✓' : '✗';
+                detailsHtml += `
+                    <div style="margin: 3px 0; padding: 3px; background: rgba(0,0,0,0.05);">
+                        <strong>${finger.fingerName}</strong> (Q: ${finger.quality})
+                        <br>ISO: ${hasIso} | ANSI: ${hasAnsi} | Pos: ${finger.x},${finger.y}
+                    </div>
+                `;
+            });
+            
+            this.rightFourFingersDetails.innerHTML = detailsHtml;
+        } else {
+            this.rightFourFingersDetails.innerHTML = '<div style="color: #999;">No finger details available</div>';
+        }
+    }
+
+    downloadRightFourTemplates() {
+        if (!this.currentRightFourTemplatesResult || !this.currentRightFourTemplatesResult.fingerTemplates) {
+            this.log('No right four fingers templates to download', 'warning');
+            return;
+        }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        let downloadCount = 0;
+
+        this.currentRightFourTemplatesResult.fingerTemplates.forEach((finger, index) => {
+            if (finger.isoTemplate) {
+                const filename = `${finger.fingerName}_ISO_template_${timestamp}.dat`;
+                this.downloadTemplate(finger.isoTemplate.data, filename);
+                downloadCount++;
+            }
+            
+            if (finger.ansiTemplate) {
+                const filename = `${finger.fingerName}_ANSI_template_${timestamp}.dat`;
+                this.downloadTemplate(finger.ansiTemplate.data, filename);
+                downloadCount++;
+            }
+        });
+
+        this.log(`Downloaded ${downloadCount} template files`, 'success');
+    }
+
+    downloadRightFourImages() {
+        if (!this.currentRightFourTemplatesResult || !this.currentRightFourTemplatesResult.fingerTemplates) {
+            this.log('No right four fingers images to download', 'warning');
+            return;
+        }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        let downloadCount = 0;
+
+        // Download full capture image
+        if (this.currentRightFourTemplatesResult.imageData) {
+            const fullImageFilename = `right_four_fingers_full_${timestamp}.bmp`;
+            this.downloadImage(this.currentRightFourTemplatesResult.imageData, fullImageFilename);
+            downloadCount++;
+        }
+
+        // Download individual finger images
+        this.currentRightFourTemplatesResult.fingerTemplates.forEach((finger, index) => {
+            if (finger.imageData) {
+                const filename = `${finger.fingerName}_${timestamp}.bmp`;
+                this.downloadImage(finger.imageData, filename);
+                downloadCount++;
+            }
+        });
+
+        this.log(`Downloaded ${downloadCount} image files`, 'success');
     }
 
     log(message, type = 'info') {
