@@ -28,7 +28,11 @@
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/FingerprintWebAPI.runtimeconfig.json
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/FingerprintWebAPI.dll
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/FingerprintWebAPI.pdb
+/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/MessagePack.dll
+/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/MessagePack.Annotations.dll
+/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/Microsoft.AspNetCore.SignalR.Protocols.MessagePack.dll
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/Microsoft.Extensions.DependencyModel.dll
+/home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/Microsoft.NET.StringTools.dll
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/Microsoft.OpenApi.dll
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/Newtonsoft.Json.dll
 /home/aoo/Documents/secondtry/Sample Code/FingerprintWebAPI/bin/Debug/net8.0/Serilog.dll

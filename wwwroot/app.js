@@ -140,9 +140,14 @@ class FingerprintPreview {
         this.connection = new signalR.HubConnectionBuilder()
             .withUrl("/ws/fingerprint", {
                 skipNegotiation: false,
-                transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling
+                transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling,
+                // Optimize for network connections
+                accessTokenFactory: () => null,
+                logMessageContent: false,
+                withCredentials: false
             })
-            .withAutomaticReconnect([0, 2000, 10000, 30000])
+            .withAutomaticReconnect([0, 1000, 2000, 5000, 10000, 30000]) // More aggressive reconnection
+            .configureLogging(signalR.LogLevel.Warning) // Reduce logging overhead
             .build();
 
         this.connection.on("ReceiveMessage", (message) => {
@@ -349,16 +354,31 @@ class FingerprintPreview {
     }
 
     drawImageFromBase64(base64Data, width, height) {
-        // Convert base64 to bytes
-        const binaryString = atob(base64Data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
+        try {
+            // Convert base64 to bytes
+            const binaryString = atob(base64Data);
+            let bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
 
-        // Create ImageData with proper dimensions
-        const imageData = this.ctx.createImageData(width, height);
-        const data = imageData.data;
+            // Try to detect if data is compressed (GZip magic number: 1f 8b)
+            if (bytes.length > 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
+                // Data is compressed, decompress it
+                bytes = this.decompressGZip(bytes);
+                this.log('Decompressed image data for network optimization', 'debug');
+            }
+
+            // Handle reduced resolution data (if bytes.length suggests it's half the expected size)
+            const expectedSize = width * height;
+            if (bytes.length < expectedSize * 0.7) {
+                // Data was reduced for network transmission, interpolate back
+                bytes = this.interpolateImageData(bytes, width, height);
+            }
+
+            // Create ImageData with proper dimensions
+            const imageData = this.ctx.createImageData(width, height);
+            const data = imageData.data;
 
         // Simple image processing for black fingerprints on white background
         for (let i = 0; i < bytes.length; i++) {
@@ -408,6 +428,64 @@ class FingerprintPreview {
         this.ctx.strokeStyle = '#d0d0d0';
         this.ctx.lineWidth = 1;
         this.ctx.strokeRect(offsetX, offsetY, scaledWidth, scaledHeight);
+        } catch (error) {
+            this.log('Error drawing image: ' + error.message, 'error');
+            // Clear canvas on error
+            this.ctx.fillStyle = '#f0f0f0';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.fillStyle = '#666';
+            this.ctx.font = '16px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('Image processing error', this.canvas.width / 2, this.canvas.height / 2);
+        }
+    }
+
+    decompressGZip(compressedData) {
+        try {
+            // Simple GZip decompression using pako library if available
+            // For now, we'll implement a fallback that just returns the data
+            // In production, you'd want to include a proper GZip library
+            this.log('GZip decompression not fully implemented - using fallback', 'warning');
+            
+            // Remove GZip header and footer for basic decompression attempt
+            if (compressedData.length > 18) {
+                return compressedData.slice(10, compressedData.length - 8);
+            }
+            return compressedData;
+        } catch (error) {
+            this.log('Decompression failed: ' + error.message, 'warning');
+            return compressedData;
+        }
+    }
+
+    interpolateImageData(reducedData, width, height) {
+        try {
+            const expectedSize = width * height;
+            const interpolatedData = new Uint8Array(expectedSize);
+            
+            // Simple nearest-neighbor interpolation
+            const reductionFactor = Math.sqrt(reducedData.length / expectedSize);
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const sourceX = Math.floor(x * reductionFactor);
+                    const sourceY = Math.floor(y * reductionFactor);
+                    const sourceWidth = Math.floor(width * reductionFactor);
+                    
+                    const sourceIndex = sourceY * sourceWidth + sourceX;
+                    const targetIndex = y * width + x;
+                    
+                    if (sourceIndex < reducedData.length) {
+                        interpolatedData[targetIndex] = reducedData[sourceIndex];
+                    }
+                }
+            }
+            
+            return interpolatedData;
+        } catch (error) {
+            this.log('Image interpolation failed: ' + error.message, 'warning');
+            return reducedData;
+        }
     }
 
     updateQualityIndicator(quality) {

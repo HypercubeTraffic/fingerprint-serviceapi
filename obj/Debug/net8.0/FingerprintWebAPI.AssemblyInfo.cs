@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FingerprintWebAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7d279fff1057f17f3fa70fb6f2323dd8aa87d4b7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bedf26950ea45ef76eff352a46cf9b0220f18f1e")]
 [assembly: System.Reflection.AssemblyProductAttribute("FingerprintWebAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FingerprintWebAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -20,13 +20,17 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
-    // Add SignalR for WebSocket communication
+    // Add SignalR for WebSocket communication with optimized settings for network performance
     builder.Services.AddSignalR(options =>
     {
-        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
-        options.HandshakeTimeout = TimeSpan.FromSeconds(15);
-        options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-    });
+        options.ClientTimeoutInterval = TimeSpan.FromSeconds(120); // Increased for network connections
+        options.HandshakeTimeout = TimeSpan.FromSeconds(30); // Increased for slower networks
+        options.KeepAliveInterval = TimeSpan.FromSeconds(10); // More frequent keep-alive for network stability
+        options.MaximumReceiveMessageSize = 10 * 1024 * 1024; // 10MB for large image data
+        options.StreamBufferCapacity = 20; // Increased buffer for streaming
+        options.MaximumParallelInvocationsPerClient = 5; // Allow more parallel operations
+        options.EnableDetailedErrors = true; // Better error reporting for debugging
+    }).AddMessagePackProtocol(); // Use MessagePack for better performance
 
     // Add CORS
     builder.Services.AddCors(options =>

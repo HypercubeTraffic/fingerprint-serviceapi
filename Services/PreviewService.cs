@@ -1,5 +1,7 @@
 using FingerprintWebAPI.Models;
 using System.Diagnostics;
+using System.IO.Compression;
+using System.Net.NetworkInformation;
 
 namespace FingerprintWebAPI.Services
 {
@@ -16,6 +18,9 @@ namespace FingerprintWebAPI.Services
         private int _currentHeight = 1500;
         private int _currentFps = 0;
         private readonly object _lockObject = new object();
+        private long _lastNetworkCheck = 0;
+        private bool _isNetworkConnection = false;
+        private int _adaptiveDelay = 33; // Start with 30 FPS
 
         public bool IsPreviewRunning => _isPreviewRunning;
         public event EventHandler<FingerprintPreviewData>? PreviewDataReceived;
@@ -49,6 +54,9 @@ namespace FingerprintWebAPI.Services
                 _currentWidth = width;
                 _currentHeight = height;
                 _currentFps = 0;
+                
+                // Detect if this is a network connection and adapt performance
+                DetectNetworkConnection();
 
                 _cancellationTokenSource = new CancellationTokenSource();
                 _previewTask = Task.Run(() => PreviewLoop(_cancellationTokenSource.Token));
@@ -147,8 +155,20 @@ namespace FingerprintWebAPI.Services
                             // Note: Removed vertical flip to test if it's causing upside-down display
                             // FingerprintDllWrapper.FlipImageVertically(rawData, _currentWidth, _currentHeight);
 
-                            // Convert to base64 for web transmission (raw data, not BMP)
-                            string base64Data = Convert.ToBase64String(rawData, 0, _currentWidth * _currentHeight);
+                            // Adaptive compression and frame rate based on network conditions
+                            string base64Data;
+                            
+                            // Check if we're dealing with a network connection (not localhost)
+                            if (_isNetworkConnection)
+                            {
+                                // For network connections, compress the data and reduce resolution if needed
+                                base64Data = await CompressImageDataAsync(rawData, _currentWidth, _currentHeight);
+                            }
+                            else
+                            {
+                                // For localhost, send raw data as before
+                                base64Data = Convert.ToBase64String(rawData, 0, _currentWidth * _currentHeight);
+                            }
 
                             var previewData = new FingerprintPreviewData
                             {
@@ -177,8 +197,8 @@ namespace FingerprintWebAPI.Services
                             lastFpsUpdate = currentTime;
                         }
 
-                        // Control frame rate (aim for ~30 FPS max)
-                        await Task.Delay(33, cancellationToken);
+                        // Adaptive frame rate control based on network conditions
+                        await Task.Delay(_adaptiveDelay, cancellationToken);
                     }
                     catch (OperationCanceledException)
                     {
@@ -203,6 +223,77 @@ namespace FingerprintWebAPI.Services
             {
                 stopwatch.Stop();
                 _logger.LogInformation("Preview loop ended");
+            }
+        }
+
+        private void DetectNetworkConnection()
+        {
+            try
+            {
+                // Simple heuristic: if we have active network connections that aren't localhost, 
+                // we're likely serving over network
+                _isNetworkConnection = _webSocketService.HasActiveConnections && 
+                                     Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.Contains("0.0.0.0") == true;
+                
+                // Adjust frame rate based on connection type
+                if (_isNetworkConnection)
+                {
+                    _adaptiveDelay = 50; // 20 FPS for network connections
+                    _logger.LogInformation("Network connection detected - using adaptive performance mode");
+                }
+                else
+                {
+                    _adaptiveDelay = 33; // 30 FPS for localhost
+                    _logger.LogInformation("Local connection detected - using high performance mode");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not detect connection type, using default settings");
+                _adaptiveDelay = 40; // Conservative default
+            }
+        }
+
+        private async Task<string> CompressImageDataAsync(byte[] rawData, int width, int height)
+        {
+            try
+            {
+                // For network connections, we'll compress the image data
+                // First, reduce the data size by taking only every other byte (reduces resolution by half)
+                int reducedSize = rawData.Length / 2;
+                byte[] reducedData = new byte[reducedSize];
+                
+                for (int i = 0; i < reducedSize; i++)
+                {
+                    reducedData[i] = rawData[i * 2]; // Take every other byte
+                }
+
+                // Then compress using GZip
+                using (var memoryStream = new MemoryStream())
+                {
+                    using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
+                    {
+                        await gzipStream.WriteAsync(reducedData, 0, reducedData.Length);
+                    }
+                    
+                    byte[] compressedData = memoryStream.ToArray();
+                    
+                    // Log compression ratio for monitoring
+                    double compressionRatio = (double)compressedData.Length / rawData.Length;
+                    if (DateTime.Now.Millisecond < 100) // Log occasionally to avoid spam
+                    {
+                        _logger.LogDebug("Image compressed: {Original}KB -> {Compressed}KB (ratio: {Ratio:P1})", 
+                            rawData.Length / 1024, compressedData.Length / 1024, compressionRatio);
+                    }
+                    
+                    return Convert.ToBase64String(compressedData);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to compress image data, falling back to raw data");
+                // Fallback to raw data if compression fails
+                return Convert.ToBase64String(rawData, 0, width * height);
             }
         }
 
