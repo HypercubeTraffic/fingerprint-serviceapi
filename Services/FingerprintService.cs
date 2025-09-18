@@ -1670,7 +1670,27 @@ namespace FingerprintWebAPI.Services
                         FingerprintDllWrapper.WriteHead(fullImageBmp, rawData, request.Width, request.Height);
                         string fullImageBase64 = Convert.ToBase64String(fullImageBmp);
 
-                        // Create templates directly from the full image (no splitting)
+                        // Extract center region for template creation (like focusing on main finger area)
+                        // Template creation functions work best with single-finger sized data (256x360)
+                        int centerX = (request.Width - 256) / 2;
+                        int centerY = (request.Height - 360) / 2;
+                        byte[] centerImageData = new byte[256 * 360];
+                        
+                        // Extract 256x360 center region from the full image
+                        for (int y = 0; y < 360; y++)
+                        {
+                            for (int x = 0; x < 256; x++)
+                            {
+                                int sourceIndex = ((centerY + y) * request.Width + (centerX + x)) * 2; // *2 because raw data is 16-bit
+                                int destIndex = y * 256 + x;
+                                if (sourceIndex < rawData.Length - 1)
+                                {
+                                    centerImageData[destIndex] = rawData[sourceIndex]; // Take the first byte of each pixel
+                                }
+                            }
+                        }
+                        _logger.LogInformation("Extracted center region {CenterX},{CenterY} size 256x360 for template creation", centerX, centerY);
+
                         var response = new FullRightFourFingersResponse
                         {
                             Success = true,
@@ -1684,7 +1704,7 @@ namespace FingerprintWebAPI.Services
                         {
                             _logger.LogInformation("Creating ISO template for full right four fingers...");
                             byte[] isoTemplate = new byte[1024];
-                            int isoResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateISOTemplate(_fpDevice, rawData, isoTemplate);
+                            int isoResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateISOTemplate(_fpDevice, centerImageData, isoTemplate);
                             _logger.LogInformation("ISO template creation result: {Result}", isoResult);
                             
                             if (isoResult != 0)
@@ -1708,7 +1728,7 @@ namespace FingerprintWebAPI.Services
                         {
                             _logger.LogInformation("Creating ANSI template for full right four fingers...");
                             byte[] ansiTemplate = new byte[1024];
-                            int ansiResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateANSITemplate(_fpDevice, rawData, ansiTemplate);
+                            int ansiResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateANSITemplate(_fpDevice, centerImageData, ansiTemplate);
                             _logger.LogInformation("ANSI template creation result: {Result}", ansiResult);
                             
                             if (ansiResult != 0)
