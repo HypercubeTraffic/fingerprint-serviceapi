@@ -335,6 +335,10 @@ class FingerprintPreview {
                     this.handleTwoThumbsCaptureResult(data);
                     break;
 
+                case 'right_four_templates_result':
+                    this.handleRightFourTemplatesResult(data);
+                    break;
+
             case 'status':
                 this.updateDeviceStatus(data);
                 break;
@@ -1075,6 +1079,25 @@ class FingerprintPreview {
         }
     }
 
+    handleRightFourTemplatesResult(data) {
+        if (data.success) {
+            this.currentRightFourTemplatesResult = data;
+            this.updateRightFourTemplatesUI(data);
+            this.log(`Right four fingers templates captured successfully! Format: ${data.fingerTemplates?.[0]?.isoTemplate && data.fingerTemplates?.[0]?.ansiTemplate ? 'BOTH' : data.fingerTemplates?.[0]?.isoTemplate ? 'ISO' : 'ANSI'}, Fingers: ${data.detectedFingerCount}`, 'success');
+            
+            // Display full image if available
+            if (data.imageData) {
+                this.displayImage(data.imageData);
+            }
+            
+            // Play success sound
+            this.playBeep();
+        } else {
+            this.rightFourTemplateStatus.textContent = 'Failed';
+            this.log(`Failed to capture right four fingers templates: ${data.message}`, 'error');
+        }
+    }
+
     async captureTwoThumbsDirect() {
         if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
             this.log('SignalR not connected', 'error');
@@ -1118,7 +1141,14 @@ class FingerprintPreview {
 
         try {
             this.log('Starting right four fingers template capture...', 'info');
-            this.setButtonsEnabled(false);
+            
+            // Disable all buttons during capture
+            this.captureRightFourTemplatesBtn.disabled = true;
+            this.captureBtn.disabled = true;
+            this.captureISOBtn.disabled = true;
+            this.captureANSIBtn.disabled = true;
+            this.captureBothBtn.disabled = true;
+            
             this.rightFourTemplateStatus.textContent = 'Capturing...';
 
             const format = this.templateFormatSelect.value;
@@ -1128,7 +1158,8 @@ class FingerprintPreview {
             const splitWidth = parseInt(this.splitWidthInput.value);
             const splitHeight = parseInt(this.splitHeightInput.value);
 
-            const request = {
+            const message = {
+                command: 'capture_right_four_templates',
                 format: format,
                 channel: channel,
                 width: width,
@@ -1138,34 +1169,17 @@ class FingerprintPreview {
                 minQuality: 30
             };
 
-            const response = await fetch('/api/fingerprint/capture/right-four-templates', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(request)
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                this.currentRightFourTemplatesResult = result;
-                this.updateRightFourTemplatesUI(result);
-                this.log(`Right four fingers templates captured successfully! Format: ${format}, Fingers: ${result.detectedFingerCount}`, 'success');
-                
-                // Display full image if available
-                if (result.imageData) {
-                    this.displayImage(result.imageData);
-                }
-            } else {
-                this.rightFourTemplateStatus.textContent = 'Failed';
-                this.log(`Failed to capture right four fingers templates: ${result.message}`, 'error');
-            }
+            await this.connection.invoke("SendMessage", JSON.stringify(message));
         } catch (err) {
             this.rightFourTemplateStatus.textContent = 'Error';
             this.log('Error capturing right four fingers templates: ' + err, 'error');
         } finally {
-            this.setButtonsEnabled(true);
+            // Re-enable buttons after capture
+            this.captureRightFourTemplatesBtn.disabled = false;
+            this.captureBtn.disabled = false;
+            this.captureISOBtn.disabled = false;
+            this.captureANSIBtn.disabled = false;
+            this.captureBothBtn.disabled = false;
         }
     }
 
