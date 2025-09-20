@@ -55,6 +55,7 @@ class FingerprintPreview {
         this.captureLeftFourTemplatesBtn = document.getElementById('captureLeftFourTemplatesBtn');
         this.captureFullLeftFourBtn = document.getElementById('captureFullLeftFourBtn');
         
+        
         this.channelSelect = document.getElementById('channelSelect');
         this.widthInput = document.getElementById('widthInput');
         this.heightInput = document.getElementById('heightInput');
@@ -170,6 +171,45 @@ class FingerprintPreview {
         this.captureFullLeftFourBtn.addEventListener('click', () => this.captureFullLeftFour());
         
         this.fingerTypeSelect.addEventListener('change', () => this.setFingerDryWet());
+        
+        // TEMPORARY DEBUG: Add debugging functions
+        window.enableLeftButtons = () => {
+            console.log('Manual enable left buttons test...');
+            const leftTemplatesBtn = document.getElementById('captureLeftFourTemplatesBtn');
+            const fullLeftBtn = document.getElementById('captureFullLeftFourBtn');
+            
+            console.log('Left templates button:', leftTemplatesBtn);
+            console.log('Full left button:', fullLeftBtn);
+            
+            if (leftTemplatesBtn) {
+                leftTemplatesBtn.disabled = false;
+                console.log('Left templates button enabled');
+            }
+            if (fullLeftBtn) {
+                fullLeftBtn.disabled = false;
+                console.log('Full left button enabled');
+            }
+        };
+        
+        window.checkButtonStates = () => {
+            console.log('=== BUTTON STATES DEBUG ===');
+            const buttons = [
+                'captureLeftFourTemplatesBtn',
+                'captureFullLeftFourBtn',
+                'captureRightFourTemplatesBtn', 
+                'captureFullRightFourBtn'
+            ];
+            
+            buttons.forEach(id => {
+                const btn = document.getElementById(id);
+                console.log(`${id}:`, {
+                    exists: !!btn,
+                    disabled: btn ? btn.disabled : 'N/A',
+                    visible: btn ? !btn.hidden : 'N/A',
+                    display: btn ? window.getComputedStyle(btn).display : 'N/A'
+                });
+            });
+        };
     }
 
     async connectSignalR() {
@@ -1506,7 +1546,7 @@ class FingerprintPreview {
         let downloadCount = 0;
 
         let totalSize = 0;
-        
+
         if (this.currentFullRightFourResult.isoTemplate) {
             const filename = `full_right_four_ISO_template_${timestamp}.dat`;
             const size = this.currentFullRightFourResult.isoTemplate.size || 1024;

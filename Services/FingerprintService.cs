@@ -1732,7 +1732,7 @@ namespace FingerprintWebAPI.Services
                         IntPtr infosIntPtr = Marshal.AllocHGlobal(size * 10);
                         IntPtr p = Marshal.AllocHGlobal(256 * 360 * 10);
                         
-                        byte[] bestFingerData = null;
+                        byte[]? bestFingerData = null;
                         int bestQuality = 0;
                         string bestFingerName = "";
                         
@@ -2312,7 +2312,7 @@ namespace FingerprintWebAPI.Services
                         IntPtr infosIntPtr = Marshal.AllocHGlobal(size * 10);
                         IntPtr p = Marshal.AllocHGlobal(256 * 360 * 10);
                         
-                        byte[] bestFingerData = null;
+                        byte[]? bestFingerData = null;
                         int bestQuality = 0;
                         string bestFingerName = "";
                         

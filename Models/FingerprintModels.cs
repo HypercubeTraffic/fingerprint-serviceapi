@@ -351,7 +351,7 @@ namespace FingerprintWebAPI.Models
         public bool Success { get; set; }
         public int DetectedFingerCount { get; set; }
         public string? Message { get; set; }
-        public List<LeftFingerTemplateData> FingerTemplates { get; set; } = new();
+        public List<FingerTemplateData> FingerTemplates { get; set; } = new();
         public string? ErrorDetails { get; set; }
         public int OverallQuality { get; set; }
         public string? ImageData { get; set; } // Full capture image
