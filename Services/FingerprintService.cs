@@ -1732,7 +1732,7 @@ namespace FingerprintWebAPI.Services
                         IntPtr infosIntPtr = Marshal.AllocHGlobal(size * 10);
                         IntPtr p = Marshal.AllocHGlobal(256 * 360 * 10);
                         
-                        byte[]? bestFingerData = null;
+                        byte[] bestFingerData = null;
                         int bestQuality = 0;
                         string bestFingerName = "";
                         
@@ -1901,7 +1901,7 @@ namespace FingerprintWebAPI.Services
             });
         }
 
-        // NEW CUSTOM METHOD FOR LEFT FOUR FINGERS TEMPLATE CAPTURE
+        // NEW CUSTOM METHODS FOR LEFT FOUR FINGERS TEMPLATE CAPTURE
         public async Task<LeftFourFingersTemplateResponse> CaptureLeftFourFingersTemplatesAsync(LeftFourFingersTemplateRequest request)
         {
             return await Task.Run(() =>
@@ -2018,7 +2018,7 @@ namespace FingerprintWebAPI.Services
                             
                             _logger.LogInformation("Detected {FingerCount} fingers, processing templates...", fingerNum);
 
-                            var fingerTemplates = new List<LeftFingerTemplateData>();
+                            var fingerTemplates = new List<FingerTemplateData>();
                             string[] fingerNames = { "left_index", "left_middle", "left_ring", "left_little" };
                             bool allFingersGoodQuality = true;
                             string qualityIssues = "";
@@ -2052,7 +2052,7 @@ namespace FingerprintWebAPI.Services
                                         _logger.LogWarning("Finger {FingerName} quality {Quality} below minimum {MinQuality}, skipping template creation", fingerNames[i], fingerQuality, request.MinQuality);
                                         
                                         // Still add the finger data but without templates
-                                        var lowQualityTemplate = new LeftFingerTemplateData
+                                        var lowQualityTemplate = new FingerTemplateData
                                         {
                                             FingerName = fingerNames[i],
                                             FingerIndex = i,
@@ -2069,7 +2069,7 @@ namespace FingerprintWebAPI.Services
                                     }
 
                                     // Create templates based on requested format
-                                    var fingerTemplate = new LeftFingerTemplateData
+                                    var fingerTemplate = new FingerTemplateData
                                     {
                                         FingerName = fingerNames[i],
                                         FingerIndex = i,
@@ -2312,7 +2312,7 @@ namespace FingerprintWebAPI.Services
                         IntPtr infosIntPtr = Marshal.AllocHGlobal(size * 10);
                         IntPtr p = Marshal.AllocHGlobal(256 * 360 * 10);
                         
-                        byte[]? bestFingerData = null;
+                        byte[] bestFingerData = null;
                         int bestQuality = 0;
                         string bestFingerName = "";
                         

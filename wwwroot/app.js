@@ -51,7 +51,7 @@ class FingerprintPreview {
         this.captureRightFourTemplatesBtn = document.getElementById('captureRightFourTemplatesBtn');
         this.captureFullRightFourBtn = document.getElementById('captureFullRightFourBtn');
         
-        // NEW LEFT FOUR ENDPOINT ELEMENTS
+        // NEW LEFT FOUR FINGERS ELEMENTS
         this.captureLeftFourTemplatesBtn = document.getElementById('captureLeftFourTemplatesBtn');
         this.captureFullLeftFourBtn = document.getElementById('captureFullLeftFourBtn');
         
@@ -106,7 +106,7 @@ class FingerprintPreview {
         this.fullRightFourQuality = document.getElementById('fullRightFourQuality');
         this.fullRightFourStatus = document.getElementById('fullRightFourStatus');
         
-        // NEW LEFT FOUR ENDPOINT STATUS ELEMENTS
+        // NEW LEFT FOUR FINGERS STATUS ELEMENTS
         this.leftFourFingerCount = document.getElementById('leftFourFingerCount');
         this.leftFourTemplateFormat = document.getElementById('leftFourTemplateFormat');
         this.leftFourOverallQuality = document.getElementById('leftFourOverallQuality');
@@ -130,7 +130,7 @@ class FingerprintPreview {
         this.currentRightFourTemplatesResult = null;
         this.currentFullRightFourResult = null;
         
-        // NEW LEFT FOUR ENDPOINT DATA
+        // NEW LEFT FOUR FINGERS DATA
         this.currentLeftFourTemplatesResult = null;
         this.currentFullLeftFourResult = null;
     }
@@ -165,7 +165,7 @@ class FingerprintPreview {
         this.captureRightFourTemplatesBtn.addEventListener('click', () => this.captureRightFourTemplates());
         this.captureFullRightFourBtn.addEventListener('click', () => this.captureFullRightFour());
         
-        // NEW LEFT FOUR ENDPOINT EVENT LISTENERS
+        // NEW LEFT FOUR FINGERS EVENT LISTENERS
         this.captureLeftFourTemplatesBtn.addEventListener('click', () => this.captureLeftFourTemplates());
         this.captureFullLeftFourBtn.addEventListener('click', () => this.captureFullLeftFour());
         
@@ -297,7 +297,7 @@ class FingerprintPreview {
                 this.captureRightFourTemplatesBtn.disabled = false;
                 this.captureFullRightFourBtn.disabled = false;
                 
-                // Enable new left four endpoint buttons
+                // Enable left four fingers buttons
                 this.captureLeftFourTemplatesBtn.disabled = false;
                 this.captureFullLeftFourBtn.disabled = false;
                 break;
@@ -327,7 +327,7 @@ class FingerprintPreview {
                 this.captureRightFourTemplatesBtn.disabled = true;
                 this.captureFullRightFourBtn.disabled = true;
                 
-                // Disable new left four endpoint buttons
+                // Disable left four fingers buttons
                 this.captureLeftFourTemplatesBtn.disabled = true;
                 this.captureFullLeftFourBtn.disabled = true;
                 break;
@@ -904,48 +904,6 @@ class FingerprintPreview {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    }
-
-    displayImage(base64Data) {
-        // Display the captured image on the canvas by converting it to a displayable format
-        try {
-            const img = new Image();
-            img.onload = () => {
-                // Clear canvas with white background
-                this.ctx.fillStyle = '#ffffff';
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-                // Calculate proper scaling to maintain aspect ratio
-                const scaleX = this.canvas.width / img.width;
-                const scaleY = this.canvas.height / img.height;
-                const scale = Math.min(scaleX, scaleY) * 0.95; // 95% to add some padding
-
-                const scaledWidth = Math.floor(img.width * scale);
-                const scaledHeight = Math.floor(img.height * scale);
-
-                // Center the image
-                const offsetX = (this.canvas.width - scaledWidth) / 2;
-                const offsetY = (this.canvas.height - scaledHeight) / 2;
-
-                // Draw the image
-                this.ctx.drawImage(img, 0, 0, img.width, img.height,
-                    offsetX, offsetY, scaledWidth, scaledHeight);
-
-                // Add simple border
-                this.ctx.strokeStyle = '#d0d0d0';
-                this.ctx.lineWidth = 1;
-                this.ctx.strokeRect(offsetX, offsetY, scaledWidth, scaledHeight);
-            };
-            
-            img.onerror = () => {
-                this.log('Error loading captured image for display', 'error');
-            };
-            
-            // Create data URL from base64
-            img.src = 'data:image/bmp;base64,' + base64Data;
-        } catch (error) {
-            this.log('Error displaying captured image: ' + error.message, 'error');
-        }
     }
 
     // NEW MISSING METHODS FROM ORIGINAL SAMPLE CODE
@@ -1570,15 +1528,7 @@ class FingerprintPreview {
         this.log(`✅ Downloaded ${downloadCount} optimized full template files (total: ${this.formatFileSize(totalSize)})`, 'success');
     }
 
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    // NEW LEFT FOUR ENDPOINT METHODS
+    // NEW LEFT FOUR FINGERS METHODS
     async captureLeftFourTemplates() {
         if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
             this.log('Not connected to server', 'error');
@@ -1615,7 +1565,7 @@ class FingerprintPreview {
                 minQuality: 20  // Lower threshold to be more permissive
             };
             
-            this.log(`Sending capture command: Format=${format}, MinQuality=20`, 'info');
+            this.log(`Sending left four capture command: Format=${format}, MinQuality=20`, 'info');
 
             await this.connection.invoke("SendMessage", JSON.stringify(message));
         } catch (err) {
@@ -1628,6 +1578,47 @@ class FingerprintPreview {
             this.captureISOBtn.disabled = false;
             this.captureANSIBtn.disabled = false;
             this.captureBothBtn.disabled = false;
+        }
+    }
+
+    async captureFullLeftFour() {
+        if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+            this.log('Not connected to server', 'error');
+            return;
+        }
+
+        try {
+            this.log('Starting full left four fingers template capture...', 'info');
+            
+            // Disable buttons during capture
+            this.captureFullLeftFourBtn.disabled = true;
+            this.captureLeftFourTemplatesBtn.disabled = true;
+            this.fullLeftFourStatus.textContent = 'Capturing...';
+
+            const format = this.templateFormatSelect.value;
+            const channel = parseInt(this.channelSelect.value);
+            const width = parseInt(this.widthInput.value);
+            const height = parseInt(this.heightInput.value);
+
+            const message = {
+                command: 'capture_full_left_four',
+                format: format,
+                channel: channel,
+                width: width,
+                height: height,
+                minQuality: 20  // Lower threshold to be more permissive
+            };
+            
+            this.log(`Sending full left capture command: Format=${format}, MinQuality=20`, 'info');
+
+            await this.connection.invoke("SendMessage", JSON.stringify(message));
+        } catch (err) {
+            this.fullLeftFourStatus.textContent = 'Error';
+            this.log('Error capturing full left four fingers template: ' + err, 'error');
+        } finally {
+            // Re-enable buttons after capture
+            this.captureFullLeftFourBtn.disabled = false;
+            this.captureLeftFourTemplatesBtn.disabled = false;
         }
     }
 
@@ -1661,6 +1652,44 @@ class FingerprintPreview {
         }
     }
 
+    handleFullLeftFourResult(data) {
+        console.log('Full left four template result:', data); // Debug logging
+        console.log('ISO Template:', data.isoTemplate); // Debug ISO template
+        console.log('ANSI Template:', data.ansiTemplate); // Debug ANSI template
+        
+        if (data.success) {
+            this.currentFullLeftFourResult = data;
+            this.updateFullLeftFourUI(data);
+            
+            // Check what templates were created
+            const hasIso = data.isoTemplate != null;
+            const hasAnsi = data.ansiTemplate != null;
+            const templateInfo = hasIso && hasAnsi ? 'BOTH' : hasIso ? 'ISO' : hasAnsi ? 'ANSI' : 'None';
+            
+            this.log(`Full left four fingers template captured successfully! Format: ${templateInfo}, Quality: ${data.overallQuality}`, 'success');
+            this.log(`Debug: hasIso=${hasIso}, hasAnsi=${hasAnsi}, isoTemplate=${data.isoTemplate ? 'exists' : 'null'}`, 'info');
+            
+            // Display full image if available
+            if (data.imageData) {
+                this.displayImage(data.imageData);
+            }
+            
+            // AUTOMATIC DOWNLOAD of the combined template
+            if (hasIso || hasAnsi) {
+                this.log('🚀 Auto-downloading full left template...', 'info');
+                this.downloadFullLeftFourTemplate();
+            } else {
+                this.log('⚠️ No templates to download - isoTemplate and ansiTemplate are both null', 'warning');
+            }
+            
+            // Play success sound
+            this.playBeep();
+        } else {
+            this.fullLeftFourStatus.textContent = 'Failed';
+            this.log(`Failed to capture full left four fingers template: ${data.message}`, 'error');
+        }
+    }
+
     updateLeftFourTemplatesUI(result) {
         this.leftFourFingerCount.textContent = result.detectedFingerCount || 0;
         this.leftFourTemplateFormat.textContent = result.fingerTemplates?.[0]?.isoTemplate && result.fingerTemplates?.[0]?.ansiTemplate ? 'BOTH' : 
@@ -1690,7 +1719,7 @@ class FingerprintPreview {
         if (result.success && result.fingerTemplates?.length > 0) {
             const hasTemplates = result.fingerTemplates.some(f => f.isoTemplate || f.ansiTemplate);
             if (hasTemplates) {
-                this.log(`🚀 Auto-downloading ${templateCount} optimized fingerprint templates (total: ${this.formatFileSize(totalTemplateSize)})...`, 'info');
+                this.log(`🚀 Auto-downloading ${templateCount} optimized left four templates (total: ${this.formatFileSize(totalTemplateSize)})...`, 'info');
                 this.downloadLeftFourTemplates(); // Only download templates, not images
             } else {
                 this.log('⚠️ Fingers detected but templates not created. Check finger quality or service logs.', 'warning');
@@ -1723,123 +1752,6 @@ class FingerprintPreview {
             this.leftFourFingersDetails.innerHTML = detailsHtml;
         } else {
             this.leftFourFingersDetails.innerHTML = '<div style="color: #999;">No finger details available</div>';
-        }
-    }
-
-    downloadLeftFourTemplates() {
-        if (!this.currentLeftFourTemplatesResult || !this.currentLeftFourTemplatesResult.fingerTemplates) {
-            this.log('No left four fingers templates to download', 'warning');
-            return;
-        }
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        let downloadCount = 0;
-
-        this.currentLeftFourTemplatesResult.fingerTemplates.forEach((finger, index) => {
-            if (finger.isoTemplate) {
-                const filename = `${finger.fingerName}_ISO_template_${timestamp}.dat`;
-                const size = finger.isoTemplate.size || 1024;
-                this.downloadBinaryData(finger.isoTemplate.data, filename);
-                downloadCount++;
-                this.log(`📄 Downloaded ISO template: ${filename} (${this.formatFileSize(size)})`, 'success');
-            }
-            
-            if (finger.ansiTemplate) {
-                const filename = `${finger.fingerName}_ANSI_template_${timestamp}.dat`;
-                const size = finger.ansiTemplate.size || 1024;
-                this.downloadBinaryData(finger.ansiTemplate.data, filename);
-                downloadCount++;
-                this.log(`📄 Downloaded ANSI template: ${filename} (${this.formatFileSize(size)})`, 'success');
-            }
-        });
-
-        // Calculate total size
-        let totalSize = 0;
-        this.currentLeftFourTemplatesResult.fingerTemplates.forEach(finger => {
-            if (finger.isoTemplate) totalSize += finger.isoTemplate.size || 1024;
-            if (finger.ansiTemplate) totalSize += finger.ansiTemplate.size || 1024;
-        });
-
-        this.log(`✅ Downloaded ${downloadCount} optimized template files (total: ${this.formatFileSize(totalSize)})`, 'success');
-    }
-
-    // NEW: FULL LEFT FOUR FINGERS TEMPLATE CAPTURE
-    async captureFullLeftFour() {
-        if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
-            this.log('Not connected to server', 'error');
-            return;
-        }
-
-        try {
-            this.log('Starting full left four fingers template capture...', 'info');
-            
-            // Disable buttons during capture
-            this.captureFullLeftFourBtn.disabled = true;
-            this.captureLeftFourTemplatesBtn.disabled = true;
-            this.fullLeftFourStatus.textContent = 'Capturing...';
-
-            const format = this.templateFormatSelect.value;
-            const channel = parseInt(this.channelSelect.value);
-            const width = parseInt(this.widthInput.value);
-            const height = parseInt(this.heightInput.value);
-
-            const message = {
-                command: 'capture_full_left_four',
-                format: format,
-                channel: channel,
-                width: width,
-                height: height,
-                minQuality: 20  // Lower threshold to be more permissive
-            };
-            
-            this.log(`Sending full capture command: Format=${format}, MinQuality=20`, 'info');
-
-            await this.connection.invoke("SendMessage", JSON.stringify(message));
-        } catch (err) {
-            this.fullLeftFourStatus.textContent = 'Error';
-            this.log('Error capturing full left four fingers template: ' + err, 'error');
-        } finally {
-            // Re-enable buttons after capture
-            this.captureFullLeftFourBtn.disabled = false;
-            this.captureLeftFourTemplatesBtn.disabled = false;
-        }
-    }
-
-    handleFullLeftFourResult(data) {
-        console.log('Full left four template result:', data); // Debug logging
-        console.log('ISO Template:', data.isoTemplate); // Debug ISO template
-        console.log('ANSI Template:', data.ansiTemplate); // Debug ANSI template
-        
-        if (data.success) {
-            this.currentFullLeftFourResult = data;
-            this.updateFullLeftFourUI(data);
-            
-            // Check what templates were created
-            const hasIso = data.isoTemplate != null;
-            const hasAnsi = data.ansiTemplate != null;
-            const templateInfo = hasIso && hasAnsi ? 'BOTH' : hasIso ? 'ISO' : hasAnsi ? 'ANSI' : 'None';
-            
-            this.log(`Full left four fingers template captured successfully! Format: ${templateInfo}, Quality: ${data.overallQuality}`, 'success');
-            this.log(`Debug: hasIso=${hasIso}, hasAnsi=${hasAnsi}, isoTemplate=${data.isoTemplate ? 'exists' : 'null'}`, 'info');
-            
-            // Display full image if available
-            if (data.imageData) {
-                this.displayImage(data.imageData);
-            }
-            
-            // AUTOMATIC DOWNLOAD of the combined template
-            if (hasIso || hasAnsi) {
-                this.log('🚀 Auto-downloading full template...', 'info');
-                this.downloadFullLeftFourTemplate();
-            } else {
-                this.log('⚠️ No templates to download - isoTemplate and ansiTemplate are both null', 'warning');
-            }
-            
-            // Play success sound
-            this.playBeep();
-        } else {
-            this.fullLeftFourStatus.textContent = 'Failed';
-            this.log(`Failed to capture full left four fingers template: ${data.message}`, 'error');
         }
     }
 
@@ -1883,6 +1795,43 @@ class FingerprintPreview {
         }
     }
 
+    downloadLeftFourTemplates() {
+        if (!this.currentLeftFourTemplatesResult || !this.currentLeftFourTemplatesResult.fingerTemplates) {
+            this.log('No left four fingers templates to download', 'warning');
+            return;
+        }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        let downloadCount = 0;
+
+        this.currentLeftFourTemplatesResult.fingerTemplates.forEach((finger, index) => {
+            if (finger.isoTemplate) {
+                const filename = `${finger.fingerName}_ISO_template_${timestamp}.dat`;
+                const size = finger.isoTemplate.size || 1024;
+                this.downloadBinaryData(finger.isoTemplate.data, filename);
+                downloadCount++;
+                this.log(`📄 Downloaded ISO template: ${filename} (${this.formatFileSize(size)})`, 'success');
+            }
+            
+            if (finger.ansiTemplate) {
+                const filename = `${finger.fingerName}_ANSI_template_${timestamp}.dat`;
+                const size = finger.ansiTemplate.size || 1024;
+                this.downloadBinaryData(finger.ansiTemplate.data, filename);
+                downloadCount++;
+                this.log(`📄 Downloaded ANSI template: ${filename} (${this.formatFileSize(size)})`, 'success');
+            }
+        });
+
+        // Calculate total size
+        let totalSize = 0;
+        this.currentLeftFourTemplatesResult.fingerTemplates.forEach(finger => {
+            if (finger.isoTemplate) totalSize += finger.isoTemplate.size || 1024;
+            if (finger.ansiTemplate) totalSize += finger.ansiTemplate.size || 1024;
+        });
+
+        this.log(`✅ Downloaded ${downloadCount} optimized left template files (total: ${this.formatFileSize(totalSize)})`, 'success');
+    }
+
     downloadFullLeftFourTemplate() {
         if (!this.currentFullLeftFourResult) {
             this.log('No full left four template to download', 'warning');
@@ -1900,7 +1849,7 @@ class FingerprintPreview {
             this.downloadBinaryData(this.currentFullLeftFourResult.isoTemplate.data, filename);
             downloadCount++;
             totalSize += size;
-            this.log(`📄 Downloaded full ISO template: ${filename} (${this.formatFileSize(size)})`, 'success');
+            this.log(`📄 Downloaded full left ISO template: ${filename} (${this.formatFileSize(size)})`, 'success');
         }
         
         if (this.currentFullLeftFourResult.ansiTemplate) {
@@ -1909,10 +1858,18 @@ class FingerprintPreview {
             this.downloadBinaryData(this.currentFullLeftFourResult.ansiTemplate.data, filename);
             downloadCount++;
             totalSize += size;
-            this.log(`📄 Downloaded full ANSI template: ${filename} (${this.formatFileSize(size)})`, 'success');
+            this.log(`📄 Downloaded full left ANSI template: ${filename} (${this.formatFileSize(size)})`, 'success');
         }
 
-        this.log(`✅ Downloaded ${downloadCount} optimized full template files (total: ${this.formatFileSize(totalSize)})`, 'success');
+        this.log(`✅ Downloaded ${downloadCount} optimized full left template files (total: ${this.formatFileSize(totalSize)})`, 'success');
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     log(message, type = 'info') {
