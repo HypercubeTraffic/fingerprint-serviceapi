@@ -172,44 +172,6 @@ class FingerprintPreview {
         
         this.fingerTypeSelect.addEventListener('change', () => this.setFingerDryWet());
         
-        // TEMPORARY DEBUG: Add debugging functions
-        window.enableLeftButtons = () => {
-            console.log('Manual enable left buttons test...');
-            const leftTemplatesBtn = document.getElementById('captureLeftFourTemplatesBtn');
-            const fullLeftBtn = document.getElementById('captureFullLeftFourBtn');
-            
-            console.log('Left templates button:', leftTemplatesBtn);
-            console.log('Full left button:', fullLeftBtn);
-            
-            if (leftTemplatesBtn) {
-                leftTemplatesBtn.disabled = false;
-                console.log('Left templates button enabled');
-            }
-            if (fullLeftBtn) {
-                fullLeftBtn.disabled = false;
-                console.log('Full left button enabled');
-            }
-        };
-        
-        window.checkButtonStates = () => {
-            console.log('=== BUTTON STATES DEBUG ===');
-            const buttons = [
-                'captureLeftFourTemplatesBtn',
-                'captureFullLeftFourBtn',
-                'captureRightFourTemplatesBtn', 
-                'captureFullRightFourBtn'
-            ];
-            
-            buttons.forEach(id => {
-                const btn = document.getElementById(id);
-                console.log(`${id}:`, {
-                    exists: !!btn,
-                    disabled: btn ? btn.disabled : 'N/A',
-                    visible: btn ? !btn.hidden : 'N/A',
-                    display: btn ? window.getComputedStyle(btn).display : 'N/A'
-                });
-            });
-        };
     }
 
     async connectSignalR() {
@@ -1902,6 +1864,52 @@ class FingerprintPreview {
         }
 
         this.log(`✅ Downloaded ${downloadCount} optimized full left template files (total: ${this.formatFileSize(totalSize)})`, 'success');
+    }
+
+    displayImage(base64Data) {
+        // Display image on canvas for visual feedback
+        if (base64Data && this.canvas && this.ctx) {
+            try {
+                // Convert base64 to bytes
+                const binaryString = atob(base64Data);
+                let bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                // Create ImageData with proper dimensions
+                const imageData = this.ctx.createImageData(this.canvas.width, this.canvas.height);
+                const data = imageData.data;
+
+                // Simple image processing for black fingerprints on white background
+                for (let i = 0; i < bytes.length && i < data.length / 4; i++) {
+                    let gray = bytes[i];
+
+                    // Apply contrast enhancement
+                    gray = Math.max(0, Math.min(255, (gray - 128) * 2.0 + 128));
+
+                    const pixelIndex = i * 4;
+                    data[pixelIndex] = gray;     // R
+                    data[pixelIndex + 1] = gray; // G
+                    data[pixelIndex + 2] = gray; // B
+                    data[pixelIndex + 3] = 255;  // A
+                }
+
+                // Clear canvas with pure white background
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw image
+                this.ctx.putImageData(imageData, 0, 0);
+
+                // Add border
+                this.ctx.strokeStyle = '#d0d0d0';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(0, 0, this.canvas.width, this.canvas.height);
+            } catch (error) {
+                this.log('Error displaying image: ' + error.message, 'error');
+            }
+        }
     }
 
     formatFileSize(bytes) {
