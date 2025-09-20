@@ -148,6 +148,10 @@ namespace FingerprintWebAPI.Hubs
                         await HandleCaptureFullLeftFour(command);
                         break;
 
+                    case "capture_full_two_thumbs":
+                        await HandleCaptureFullTwoThumbs(command);
+                        break;
+
                     default:
                         await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
                         {
@@ -744,6 +748,39 @@ namespace FingerprintWebAPI.Hubs
                 {
                     Type = "error",
                     Data = new { message = $"Error capturing full left four fingers template: {ex.Message}" }
+                });
+            }
+        }
+
+        // NEW CUSTOM ENDPOINT HANDLER FOR FULL TWO THUMBS
+        private async Task HandleCaptureFullTwoThumbs(dynamic command)
+        {
+            try
+            {
+                var request = new FullTwoThumbsRequest
+                {
+                    Format = command?.format ?? "BOTH",
+                    Channel = command?.channel ?? 0,
+                    Width = command?.width ?? 1600,
+                    Height = command?.height ?? 1500,
+                    MinQuality = command?.minQuality ?? 30
+                };
+
+                var result = await _fingerprintService.CaptureFullTwoThumbsAsync(request);
+
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "full_two_thumbs_result",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing full two thumbs template");
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "error",
+                    Data = new { message = $"Error capturing full two thumbs template: {ex.Message}" }
                 });
             }
         }

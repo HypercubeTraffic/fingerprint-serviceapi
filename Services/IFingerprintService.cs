@@ -39,6 +39,9 @@ namespace FingerprintWebAPI.Services
         // NEW CUSTOM METHOD FOR FULL LEFT FOUR FINGERS AS ONE TEMPLATE
         Task<FullLeftFourFingersResponse> CaptureFullLeftFourFingersAsync(FullLeftFourFingersRequest request);
         
+        // NEW CUSTOM METHOD FOR FULL TWO THUMBS AS ONE TEMPLATE
+        Task<FullTwoThumbsResponse> CaptureFullTwoThumbsAsync(FullTwoThumbsRequest request);
+        
         bool IsDeviceConnected { get; }
         bool IsInitialized { get; }
     }

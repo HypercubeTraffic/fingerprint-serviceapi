@@ -55,6 +55,9 @@ class FingerprintPreview {
         this.captureLeftFourTemplatesBtn = document.getElementById('captureLeftFourTemplatesBtn');
         this.captureFullLeftFourBtn = document.getElementById('captureFullLeftFourBtn');
         
+        // NEW TWO THUMBS TEMPLATE ELEMENTS
+        this.captureFullTwoThumbsBtn = document.getElementById('captureFullTwoThumbsBtn');
+        
         
         this.channelSelect = document.getElementById('channelSelect');
         this.widthInput = document.getElementById('widthInput');
@@ -118,6 +121,11 @@ class FingerprintPreview {
         this.fullLeftFourFormat = document.getElementById('fullLeftFourFormat');
         this.fullLeftFourQuality = document.getElementById('fullLeftFourQuality');
         this.fullLeftFourStatus = document.getElementById('fullLeftFourStatus');
+        
+        // FULL TWO THUMBS TEMPLATE ELEMENTS
+        this.fullTwoThumbsFormat = document.getElementById('fullTwoThumbsFormat');
+        this.fullTwoThumbsQuality = document.getElementById('fullTwoThumbsQuality');
+        this.fullTwoThumbsStatus = document.getElementById('fullTwoThumbsStatus');
 
         // Store current template and split data
         this.currentTemplate = null;
@@ -134,6 +142,9 @@ class FingerprintPreview {
         // NEW LEFT FOUR FINGERS DATA
         this.currentLeftFourTemplatesResult = null;
         this.currentFullLeftFourResult = null;
+        
+        // NEW TWO THUMBS TEMPLATE DATA
+        this.currentFullTwoThumbsResult = null;
     }
 
     setupEventListeners() {
@@ -169,6 +180,9 @@ class FingerprintPreview {
         // NEW LEFT FOUR FINGERS EVENT LISTENERS
         this.captureLeftFourTemplatesBtn.addEventListener('click', () => this.captureLeftFourTemplates());
         this.captureFullLeftFourBtn.addEventListener('click', () => this.captureFullLeftFour());
+        
+        // NEW TWO THUMBS TEMPLATE EVENT LISTENERS
+        this.captureFullTwoThumbsBtn.addEventListener('click', () => this.captureFullTwoThumbs());
         
         this.fingerTypeSelect.addEventListener('change', () => this.setFingerDryWet());
         
@@ -302,6 +316,9 @@ class FingerprintPreview {
                 // Enable left four fingers buttons
                 this.captureLeftFourTemplatesBtn.disabled = false;
                 this.captureFullLeftFourBtn.disabled = false;
+                
+                // Enable two thumbs template button
+                this.captureFullTwoThumbsBtn.disabled = false;
                 break;
 
             case 'preview_stopped':
@@ -332,6 +349,9 @@ class FingerprintPreview {
                 // Disable left four fingers buttons
                 this.captureLeftFourTemplatesBtn.disabled = true;
                 this.captureFullLeftFourBtn.disabled = true;
+                
+                // Disable two thumbs template button
+                this.captureFullTwoThumbsBtn.disabled = true;
                 break;
 
             case 'preview':
@@ -389,6 +409,10 @@ class FingerprintPreview {
 
                 case 'full_left_four_result':
                     this.handleFullLeftFourResult(data);
+                    break;
+
+                case 'full_two_thumbs_result':
+                    this.handleFullTwoThumbsResult(data);
                     break;
 
             case 'status':
@@ -1864,6 +1888,160 @@ class FingerprintPreview {
         }
 
         this.log(`✅ Downloaded ${downloadCount} optimized full left template files (total: ${this.formatFileSize(totalSize)})`, 'success');
+    }
+
+    // NEW TWO THUMBS TEMPLATE METHODS
+    async captureFullTwoThumbs() {
+        if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+            this.log('Not connected to server', 'error');
+            return;
+        }
+
+        try {
+            this.log('Starting full two thumbs template capture...', 'info');
+            
+            // Disable buttons during capture
+            this.captureFullTwoThumbsBtn.disabled = true;
+            this.captureFullLeftFourBtn.disabled = true;
+            this.captureFullRightFourBtn.disabled = true;
+            this.fullTwoThumbsStatus.textContent = 'Capturing...';
+
+            const format = this.templateFormatSelect.value;
+            const channel = parseInt(this.channelSelect.value);
+            const width = parseInt(this.widthInput.value);
+            const height = parseInt(this.heightInput.value);
+
+            const message = {
+                command: 'capture_full_two_thumbs',
+                format: format,
+                channel: channel,
+                width: width,
+                height: height,
+                minQuality: 20  // Lower threshold to be more permissive
+            };
+            
+            this.log(`Sending full two thumbs capture command: Format=${format}, MinQuality=20`, 'info');
+
+            await this.connection.invoke("SendMessage", JSON.stringify(message));
+        } catch (err) {
+            this.fullTwoThumbsStatus.textContent = 'Error';
+            this.log('Error capturing full two thumbs template: ' + err, 'error');
+        } finally {
+            // Re-enable buttons after capture
+            this.captureFullTwoThumbsBtn.disabled = false;
+            this.captureFullLeftFourBtn.disabled = false;
+            this.captureFullRightFourBtn.disabled = false;
+        }
+    }
+
+    handleFullTwoThumbsResult(data) {
+        console.log('Full two thumbs template result:', data); // Debug logging
+        console.log('ISO Template:', data.isoTemplate); // Debug ISO template
+        console.log('ANSI Template:', data.ansiTemplate); // Debug ANSI template
+        
+        if (data.success) {
+            this.currentFullTwoThumbsResult = data;
+            this.updateFullTwoThumbsUI(data);
+            
+            // Check what templates were created
+            const hasIso = data.isoTemplate != null;
+            const hasAnsi = data.ansiTemplate != null;
+            const templateInfo = hasIso && hasAnsi ? 'BOTH' : hasIso ? 'ISO' : hasAnsi ? 'ANSI' : 'None';
+            
+            this.log(`Full two thumbs template captured successfully! Format: ${templateInfo}, Quality: ${data.overallQuality}`, 'success');
+            this.log(`Debug: hasIso=${hasIso}, hasAnsi=${hasAnsi}, isoTemplate=${data.isoTemplate ? 'exists' : 'null'}`, 'info');
+            
+            // Display full image if available
+            if (data.imageData) {
+                this.displayImage(data.imageData);
+            }
+            
+            // AUTOMATIC DOWNLOAD of the combined template
+            if (hasIso || hasAnsi) {
+                this.log('🚀 Auto-downloading full two thumbs template...', 'info');
+                this.downloadFullTwoThumbsTemplate();
+            } else {
+                this.log('⚠️ No templates to download - isoTemplate and ansiTemplate are both null', 'warning');
+            }
+            
+            // Play success sound
+            this.playBeep();
+        } else {
+            this.fullTwoThumbsStatus.textContent = 'Failed';
+            this.log(`Failed to capture full two thumbs template: ${data.message}`, 'error');
+        }
+    }
+
+    updateFullTwoThumbsUI(result) {
+        const hasIso = result.isoTemplate != null;
+        const hasAnsi = result.ansiTemplate != null;
+        this.fullTwoThumbsFormat.textContent = hasIso && hasAnsi ? 'BOTH' : hasIso ? 'ISO' : hasAnsi ? 'ANSI' : 'None';
+        this.fullTwoThumbsQuality.textContent = result.overallQuality || 0;
+        this.fullTwoThumbsStatus.textContent = result.success ? 'Success' : 'Failed';
+        
+        // Calculate and display template sizes
+        let totalSize = 0;
+        let templateCount = 0;
+        if (hasIso) {
+            totalSize += result.isoTemplate.size || 1024;
+            templateCount++;
+        }
+        if (hasAnsi) {
+            totalSize += result.ansiTemplate.size || 1024;
+            templateCount++;
+        }
+        
+        // Update the status section with size information
+        if (result.success && templateCount > 0) {
+            const sizeInfo = document.createElement('div');
+            sizeInfo.style.marginTop = '5px';
+            sizeInfo.style.fontSize = '11px';
+            sizeInfo.style.color = '#607d8b';
+            sizeInfo.innerHTML = `Templates: ${templateCount} files (${this.formatFileSize(totalSize)})`;
+            
+            // Find the full two thumbs section and add size info
+            const fullSection = document.querySelector('.full-two-thumbs-section');
+            const existingSizeInfo = fullSection?.querySelector('.size-info');
+            if (existingSizeInfo) {
+                existingSizeInfo.remove();
+            }
+            if (fullSection) {
+                sizeInfo.className = 'size-info';
+                fullSection.appendChild(sizeInfo);
+            }
+        }
+    }
+
+    downloadFullTwoThumbsTemplate() {
+        if (!this.currentFullTwoThumbsResult) {
+            this.log('No full two thumbs template to download', 'warning');
+            return;
+        }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        let downloadCount = 0;
+
+        let totalSize = 0;
+        
+        if (this.currentFullTwoThumbsResult.isoTemplate) {
+            const filename = `full_two_thumbs_ISO_template_${timestamp}.dat`;
+            const size = this.currentFullTwoThumbsResult.isoTemplate.size || 1024;
+            this.downloadBinaryData(this.currentFullTwoThumbsResult.isoTemplate.data, filename);
+            downloadCount++;
+            totalSize += size;
+            this.log(`📄 Downloaded full two thumbs ISO template: ${filename} (${this.formatFileSize(size)})`, 'success');
+        }
+        
+        if (this.currentFullTwoThumbsResult.ansiTemplate) {
+            const filename = `full_two_thumbs_ANSI_template_${timestamp}.dat`;
+            const size = this.currentFullTwoThumbsResult.ansiTemplate.size || 1024;
+            this.downloadBinaryData(this.currentFullTwoThumbsResult.ansiTemplate.data, filename);
+            downloadCount++;
+            totalSize += size;
+            this.log(`📄 Downloaded full two thumbs ANSI template: ${filename} (${this.formatFileSize(size)})`, 'success');
+        }
+
+        this.log(`✅ Downloaded ${downloadCount} optimized full two thumbs template files (total: ${this.formatFileSize(totalSize)})`, 'success');
     }
 
     displayImage(base64Data) {

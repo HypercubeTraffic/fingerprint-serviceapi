@@ -2481,6 +2481,262 @@ namespace FingerprintWebAPI.Services
             });
         }
 
+        public async Task<FullTwoThumbsResponse> CaptureFullTwoThumbsAsync(FullTwoThumbsRequest request)
+        {
+            return await Task.Run(() =>
+            {
+                lock (_lockObject)
+                {
+                    try
+                    {
+                        if (!_isDeviceConnected)
+                        {
+                            return new FullTwoThumbsResponse
+                            {
+                                Success = false,
+                                Message = "Device not connected"
+                            };
+                        }
+
+                        if (_fpDevice == 0)
+                        {
+                            return new FullTwoThumbsResponse
+                            {
+                                Success = false,
+                                Message = "Fingerprint algorithm device not initialized for template creation"
+                            };
+                        }
+
+                        _logger.LogInformation("Capturing full two thumbs template: Format={Format}, {Width}x{Height} on channel {Channel}", 
+                            request.Format, request.Width, request.Height, request.Channel);
+
+                        // Set LED for two thumbs
+                        FingerprintDllWrapper.LIVESCAN_SetLedLight(4); // Two thumbs LED (based on Fourfinger_Test)
+                        FingerprintDllWrapper.LIVESCAN_Beep(1); // Audio indication
+                        _logger.LogInformation("LED and beep set for full two thumbs");
+
+                        // Set capture window
+                        FingerprintDllWrapper.LIVESCAN_SetCaptWindow(request.Channel, 0, 0, request.Width, request.Height);
+                        _logger.LogInformation("Capture window set: {Width}x{Height}", request.Width, request.Height);
+
+                        // Capture raw data - Use w*h*2 for template operations
+                        byte[] rawData = new byte[request.Width * request.Height * 2];
+                        int result = FingerprintDllWrapper.LIVESCAN_GetFPRawData(request.Channel, rawData);
+                        _logger.LogInformation("Raw data capture result: {Result}, Buffer size: {Size}", result, rawData.Length);
+                        
+                        if (result != 1)
+                        {
+                            _logger.LogError("Failed to capture fingerprint data, result: {Result}", result);
+                            return new FullTwoThumbsResponse
+                            {
+                                Success = false,
+                                Message = $"Failed to capture fingerprint data: {result}"
+                            };
+                        }
+
+                        // Check overall quality
+                        int overallQuality = FingerprintDllWrapper.MOSAIC_FingerQuality(rawData, request.Width, request.Height);
+                        _logger.LogInformation("Overall image quality: {Quality}", overallQuality);
+                        
+                        if (overallQuality < request.MinQuality)
+                        {
+                            _logger.LogWarning("Poor image quality detected: {Quality}", overallQuality);
+                            return new FullTwoThumbsResponse
+                            {
+                                Success = false,
+                                Message = $"Poor image quality: {overallQuality} (minimum: {request.MinQuality})"
+                            };
+                        }
+
+                        // Apply image enhancements
+                        _logger.LogInformation("Applying image enhancements...");
+                        FingerprintDllWrapper.ApplyImageEnhancement(rawData, request.Width, request.Height);
+                        FingerprintDllWrapper.FlipImageVertically(rawData, request.Width, request.Height);
+                        _logger.LogInformation("Image enhancements applied");
+
+                        // Create BMP for full image
+                        byte[] fullImageBmp = new byte[1078 + request.Width * request.Height];
+                        FingerprintDllWrapper.WriteHead(fullImageBmp, rawData, request.Width, request.Height);
+                        string fullImageBase64 = Convert.ToBase64String(fullImageBmp);
+
+                        // BETTER APPROACH: Split thumbs first, then use the BEST QUALITY thumb for the "full" template
+                        // This follows the same pattern as Fourfinger_Test - templates are always from individual thumbs
+                        
+                        // Perform thumb splitting to get individual thumbs
+                        int thumbNum = 0;
+                        int size = Marshal.SizeOf(typeof(FingerprintDllWrapper.FPSPLIT_INFO));
+                        IntPtr infosIntPtr = Marshal.AllocHGlobal(size * 10);
+                        IntPtr p = Marshal.AllocHGlobal(256 * 360 * 10);
+                        
+                        byte[]? bestThumbData = null;
+                        int bestQuality = 0;
+                        string bestThumbName = "";
+                        
+                        try
+                        {
+                            // Set up memory pointers like Fourfinger_Test
+                            for (int i = 0; i < 10; i++)
+                            {
+                                Marshal.WriteIntPtr((IntPtr)((UInt64)infosIntPtr + 24 + (UInt64)(i * size)), 
+                                    (IntPtr)((UInt64)p + (UInt64)(i * 256 * 360)));
+                            }
+                            
+                            // Split thumbs - use type 2 for two thumbs (based on Fourfinger_Test)
+                            int splitResult = FingerprintDllWrapper.FPSPLIT_DoSplit(rawData, request.Width, request.Height, 
+                                2, 256, 360, ref thumbNum, infosIntPtr);
+                            
+                            _logger.LogInformation("FPSPLIT_DoSplit for full template: result={SplitResult}, thumbNum={ThumbNum}", splitResult, thumbNum);
+                            
+                            if (thumbNum >= 2) // Need at least 2 thumbs
+                            {
+                                // Find the best quality thumb to use as the "full" template
+                                string[] thumbNames = { "left_thumb", "right_thumb" };
+                                
+                                for (int i = 0; i < Math.Min(thumbNum, 2); i++)
+                                {
+                                    // Extract thumb image data
+                                    IntPtr imagePtr = Marshal.ReadIntPtr((IntPtr)((UInt64)infosIntPtr + (UInt64)(i * size) + 24));
+                                    byte[] thumbImageData = new byte[256 * 360];
+                                    Marshal.Copy(imagePtr, thumbImageData, 0, 256 * 360);
+                                    
+                                    // Check thumb quality
+                                    int thumbQuality = FingerprintDllWrapper.MOSAIC_FingerQuality(thumbImageData, 256, 360);
+                                    _logger.LogInformation("Thumb {Index} ({Name}) quality for full template: {Quality}", i, thumbNames[i], thumbQuality);
+                                    
+                                    if (thumbQuality > bestQuality && thumbQuality >= request.MinQuality)
+                                    {
+                                        bestQuality = thumbQuality;
+                                        bestThumbData = thumbImageData;
+                                        bestThumbName = thumbNames[i];
+                                    }
+                                }
+                                
+                                if (bestThumbData == null)
+                                {
+                                    return new FullTwoThumbsResponse
+                                    {
+                                        Success = false,
+                                        Message = $"No thumbs meet minimum quality {request.MinQuality} for template creation"
+                                    };
+                                }
+                                
+                                _logger.LogInformation("Using {BestThumb} (quality {BestQuality}) for full template creation", bestThumbName, bestQuality);
+                            }
+                            else
+                            {
+                                return new FullTwoThumbsResponse
+                                {
+                                    Success = false,
+                                    Message = "Less than 2 thumbs detected for template creation"
+                                };
+                            }
+                        }
+                        finally
+                        {
+                            if (p != IntPtr.Zero)
+                                Marshal.FreeHGlobal(p);
+                            if (infosIntPtr != IntPtr.Zero)
+                                Marshal.FreeHGlobal(infosIntPtr);
+                        }
+
+                        var response = new FullTwoThumbsResponse
+                        {
+                            Success = true,
+                            OverallQuality = overallQuality,
+                            ImageData = fullImageBase64,
+                            Message = "Full two thumbs captured successfully"
+                        };
+
+                        // Create ISO template if requested (using best quality thumb)
+                        if (request.Format.ToUpper() == "ISO" || request.Format.ToUpper() == "BOTH")
+                        {
+                            _logger.LogInformation("Creating ISO template from best thumb ({BestThumb})...", bestThumbName);
+                            byte[] isoTemplate = new byte[1024];
+                            int isoResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateISOTemplate(_fpDevice, bestThumbData, isoTemplate);
+                            _logger.LogInformation("ISO template creation result: {Result}", isoResult);
+                            
+                            if (isoResult != 0)
+                            {
+                                // OPTIMIZATION: Optimize template size
+                                int actualIsoSize = FindActualTemplateSize(isoTemplate);
+                                byte[] optimizedIsoTemplate = new byte[actualIsoSize];
+                                Array.Copy(isoTemplate, 0, optimizedIsoTemplate, 0, actualIsoSize);
+                                
+                                response.IsoTemplate = new TemplateData
+                                {
+                                    Data = Convert.ToBase64String(optimizedIsoTemplate),
+                                    Size = actualIsoSize,
+                                    Quality = overallQuality
+                                };
+                                _logger.LogInformation("ISO template created successfully for full two thumbs (optimized to {Size} bytes)", actualIsoSize);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to create ISO template for full two thumbs");
+                            }
+                        }
+
+                        // Create ANSI template if requested (using best quality thumb)
+                        if (request.Format.ToUpper() == "ANSI" || request.Format.ToUpper() == "BOTH")
+                        {
+                            _logger.LogInformation("Creating ANSI template from best thumb ({BestThumb})...", bestThumbName);
+                            byte[] ansiTemplate = new byte[1024];
+                            int ansiResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateANSITemplate(_fpDevice, bestThumbData, ansiTemplate);
+                            _logger.LogInformation("ANSI template creation result: {Result}", ansiResult);
+                            
+                            if (ansiResult != 0)
+                            {
+                                // OPTIMIZATION: Optimize template size
+                                int actualAnsiSize = FindActualTemplateSize(ansiTemplate);
+                                byte[] optimizedAnsiTemplate = new byte[actualAnsiSize];
+                                Array.Copy(ansiTemplate, 0, optimizedAnsiTemplate, 0, actualAnsiSize);
+                                
+                                response.AnsiTemplate = new TemplateData
+                                {
+                                    Data = Convert.ToBase64String(optimizedAnsiTemplate),
+                                    Size = actualAnsiSize,
+                                    Quality = overallQuality
+                                };
+                                _logger.LogInformation("ANSI template created successfully for full two thumbs (optimized to {Size} bytes)", actualAnsiSize);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to create ANSI template for full two thumbs");
+                            }
+                        }
+
+                        // Check if any templates were created
+                        bool hasTemplates = (response.IsoTemplate != null) || (response.AnsiTemplate != null);
+                        if (!hasTemplates)
+                        {
+                            response.Success = false;
+                            response.Message = "Failed to create any templates from the captured image";
+                            return response;
+                        }
+
+                        // Set success LED indication
+                        FingerprintDllWrapper.LIVESCAN_SetLedLight(15); // Success LED
+                        FingerprintDllWrapper.LIVESCAN_Beep(1); // Success beep
+
+                        response.Message = $"Successfully created {request.Format} template(s) for full two thumbs";
+                        _logger.LogInformation("Full two thumbs template capture completed successfully");
+
+                        return response;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error capturing full two thumbs template");
+                        return new FullTwoThumbsResponse
+                        {
+                            Success = false,
+                            Message = $"Error capturing full two thumbs template: {ex.Message}",
+                            ErrorDetails = ex.ToString()
+                        };
+                    }
+                }
+            });
+        }
+
         public void Dispose()
         {
             CloseAsync().Wait();

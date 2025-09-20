@@ -405,6 +405,27 @@ namespace FingerprintWebAPI.Models
         public string? ErrorDetails { get; set; }
     }
 
+    // NEW: FULL TWO THUMBS AS ONE TEMPLATE
+    public class FullTwoThumbsRequest
+    {
+        public string Format { get; set; } = "BOTH"; // ISO, ANSI, or BOTH
+        public int Channel { get; set; } = 0;
+        public int Width { get; set; } = 1600;
+        public int Height { get; set; } = 1500;
+        public int MinQuality { get; set; } = 30;
+    }
+
+    public class FullTwoThumbsResponse
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public int OverallQuality { get; set; }
+        public string? ImageData { get; set; } // Full capture image
+        public TemplateData? IsoTemplate { get; set; } // Combined template from best thumb
+        public TemplateData? AnsiTemplate { get; set; } // Combined template from best thumb
+        public string? ErrorDetails { get; set; }
+    }
+
     public class FullLeftFourFingersCommand
     {
         public string Command { get; set; } = "capture_full_left_four";

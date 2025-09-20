@@ -490,5 +490,27 @@ namespace FingerprintWebAPI.Controllers
                 return StatusCode(500, $"Error capturing full left four fingers template: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// NEW CUSTOM ENDPOINT: Capture full two thumbs as one combined template
+        /// This endpoint captures the two thumbs as a single combined template (no splitting)
+        /// </summary>
+        [HttpPost("capture/full-two-thumbs")]
+        public async Task<ActionResult<FullTwoThumbsResponse>> CaptureFullTwoThumbs([FromBody] FullTwoThumbsRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Full two thumbs template capture request: Format={Format}, {Width}x{Height} on channel {Channel}, MinQuality={MinQuality}", 
+                    request.Format, request.Width, request.Height, request.Channel, request.MinQuality);
+                
+                var result = await _fingerprintService.CaptureFullTwoThumbsAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing full two thumbs template");
+                return StatusCode(500, $"Error capturing full two thumbs template: {ex.Message}");
+            }
+        }
     }
 }
