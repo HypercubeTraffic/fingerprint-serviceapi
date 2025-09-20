@@ -390,14 +390,21 @@ namespace FingerprintWebAPI.Services
                         };
                     }
 
+                    // OPTIMIZATION: Find actual template end to reduce size
+                    int actualTemplateSize = FindActualTemplateSize(template);
+                    byte[] optimizedTemplate = new byte[actualTemplateSize];
+                    Array.Copy(template, 0, optimizedTemplate, 0, actualTemplateSize);
+                    
+                    _logger.LogInformation("Template optimized: {Format} template reduced from 1024 to {ActualSize} bytes", format, actualTemplateSize);
+
                     return new TemplateResponse
                     {
                         Success = true,
                         TemplateFormat = format.ToUpper(),
-                        TemplateData = Convert.ToBase64String(template),
-                        TemplateSize = 1024,
+                        TemplateData = Convert.ToBase64String(optimizedTemplate),
+                        TemplateSize = actualTemplateSize,
                         QualityScore = quality,
-                        Message = $"{format.ToUpper()} template created successfully"
+                        Message = $"{format.ToUpper()} template created successfully (optimized to {actualTemplateSize} bytes)"
                     };
                 }
                 catch (Exception ex)
@@ -410,6 +417,39 @@ namespace FingerprintWebAPI.Services
                     };
                 }
             });
+        }
+
+        /// <summary>
+        /// Find the actual size of template data by locating the end of meaningful data
+        /// This removes padding zeros that are not part of the actual template
+        /// </summary>
+        private int FindActualTemplateSize(byte[] template)
+        {
+            // ISO/ANSI templates typically have a header that indicates the actual size
+            // For safety, we'll scan backwards from the end to find the last non-zero byte
+            // but ensure we keep at least the first 32 bytes (header information)
+            
+            int minSize = Math.Min(32, template.Length); // Keep at least header
+            int actualSize = template.Length;
+            
+            // Scan backwards to find last meaningful data
+            for (int i = template.Length - 1; i >= minSize; i--)
+            {
+                if (template[i] != 0x00)
+                {
+                    actualSize = i + 1;
+                    break;
+                }
+            }
+            
+            // Ensure we don't make it too small - templates need minimum structure
+            if (actualSize < minSize)
+                actualSize = minSize;
+                
+            // Round up to nearest 16 bytes for proper alignment
+            actualSize = ((actualSize + 15) / 16) * 16;
+            
+            return Math.Min(actualSize, template.Length);
         }
 
         private async Task<TemplateResponse> CreateBothTemplatesFromRaw(byte[] fingerImageData, int quality)
@@ -1472,13 +1512,18 @@ namespace FingerprintWebAPI.Services
                                         
                                         if (isoResult != 0)
                                         {
+                                            // OPTIMIZATION: Optimize template size
+                                            int actualIsoSize = FindActualTemplateSize(isoTemplate);
+                                            byte[] optimizedIsoTemplate = new byte[actualIsoSize];
+                                            Array.Copy(isoTemplate, 0, optimizedIsoTemplate, 0, actualIsoSize);
+                                            
                                             fingerTemplate.IsoTemplate = new TemplateData
                                             {
-                                                Data = Convert.ToBase64String(isoTemplate),
-                                                Size = 1024,
+                                                Data = Convert.ToBase64String(optimizedIsoTemplate),
+                                                Size = actualIsoSize,
                                                 Quality = fingerQuality
                                             };
-                                            _logger.LogInformation("ISO template created successfully for {FingerName}", fingerNames[i]);
+                                            _logger.LogInformation("ISO template created successfully for {FingerName} (optimized to {Size} bytes)", fingerNames[i], actualIsoSize);
                                         }
                                         else
                                         {
@@ -1489,17 +1534,25 @@ namespace FingerprintWebAPI.Services
                                     // Create ANSI template if requested
                                     if (request.Format.ToUpper() == "ANSI" || request.Format.ToUpper() == "BOTH")
                                     {
+                                        _logger.LogInformation("Creating ANSI template for {FingerName}...", fingerNames[i]);
                                         byte[] ansiTemplate = new byte[1024];
                                         int ansiResult = FingerprintDllWrapper.ZAZ_FpStdLib_CreateANSITemplate(_fpDevice, fingerImageData, ansiTemplate);
+                                        _logger.LogInformation("ANSI template creation result for {FingerName}: {Result}", fingerNames[i], ansiResult);
                                         
                                         if (ansiResult != 0)
                                         {
+                                            // OPTIMIZATION: Optimize template size
+                                            int actualAnsiSize = FindActualTemplateSize(ansiTemplate);
+                                            byte[] optimizedAnsiTemplate = new byte[actualAnsiSize];
+                                            Array.Copy(ansiTemplate, 0, optimizedAnsiTemplate, 0, actualAnsiSize);
+                                            
                                             fingerTemplate.AnsiTemplate = new TemplateData
                                             {
-                                                Data = Convert.ToBase64String(ansiTemplate),
-                                                Size = 1024,
+                                                Data = Convert.ToBase64String(optimizedAnsiTemplate),
+                                                Size = actualAnsiSize,
                                                 Quality = fingerQuality
                                             };
+                                            _logger.LogInformation("ANSI template created successfully for {FingerName} (optimized to {Size} bytes)", fingerNames[i], actualAnsiSize);
                                         }
                                         else
                                         {
@@ -1679,7 +1732,7 @@ namespace FingerprintWebAPI.Services
                         IntPtr infosIntPtr = Marshal.AllocHGlobal(size * 10);
                         IntPtr p = Marshal.AllocHGlobal(256 * 360 * 10);
                         
-                        byte[] bestFingerData = null;
+                        byte[]? bestFingerData = null;
                         int bestQuality = 0;
                         string bestFingerName = "";
                         
@@ -1768,13 +1821,18 @@ namespace FingerprintWebAPI.Services
                             
                             if (isoResult != 0)
                             {
+                                // OPTIMIZATION: Optimize template size
+                                int actualIsoSize = FindActualTemplateSize(isoTemplate);
+                                byte[] optimizedIsoTemplate = new byte[actualIsoSize];
+                                Array.Copy(isoTemplate, 0, optimizedIsoTemplate, 0, actualIsoSize);
+                                
                                 response.IsoTemplate = new TemplateData
                                 {
-                                    Data = Convert.ToBase64String(isoTemplate),
-                                    Size = 1024,
+                                    Data = Convert.ToBase64String(optimizedIsoTemplate),
+                                    Size = actualIsoSize,
                                     Quality = overallQuality
                                 };
-                                _logger.LogInformation("ISO template created successfully for full right four fingers");
+                                _logger.LogInformation("ISO template created successfully for full right four fingers (optimized to {Size} bytes)", actualIsoSize);
                             }
                             else
                             {
@@ -1792,13 +1850,18 @@ namespace FingerprintWebAPI.Services
                             
                             if (ansiResult != 0)
                             {
+                                // OPTIMIZATION: Optimize template size
+                                int actualAnsiSize = FindActualTemplateSize(ansiTemplate);
+                                byte[] optimizedAnsiTemplate = new byte[actualAnsiSize];
+                                Array.Copy(ansiTemplate, 0, optimizedAnsiTemplate, 0, actualAnsiSize);
+                                
                                 response.AnsiTemplate = new TemplateData
                                 {
-                                    Data = Convert.ToBase64String(ansiTemplate),
-                                    Size = 1024,
+                                    Data = Convert.ToBase64String(optimizedAnsiTemplate),
+                                    Size = actualAnsiSize,
                                     Quality = overallQuality
                                 };
-                                _logger.LogInformation("ANSI template created successfully for full right four fingers");
+                                _logger.LogInformation("ANSI template created successfully for full right four fingers (optimized to {Size} bytes)", actualAnsiSize);
                             }
                             else
                             {

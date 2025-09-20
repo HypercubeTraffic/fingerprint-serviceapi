@@ -1214,31 +1214,56 @@ class FingerprintPreview {
         this.rightFourOverallQuality.textContent = result.overallQuality || 0;
         this.rightFourTemplateStatus.textContent = result.success ? 'Success' : 'Failed';
 
+        // Calculate total template size for display
+        let totalTemplateSize = 0;
+        let templateCount = 0;
+        
+        if (result.success && result.fingerTemplates?.length > 0) {
+            result.fingerTemplates.forEach(finger => {
+                if (finger.isoTemplate) {
+                    totalTemplateSize += finger.isoTemplate.size || 1024;
+                    templateCount++;
+                }
+                if (finger.ansiTemplate) {
+                    totalTemplateSize += finger.ansiTemplate.size || 1024;
+                    templateCount++;
+                }
+            });
+        }
+
         // AUTOMATIC DOWNLOAD: Download TEMPLATES (ISO/ANSI) immediately if successful
         if (result.success && result.fingerTemplates?.length > 0) {
             const hasTemplates = result.fingerTemplates.some(f => f.isoTemplate || f.ansiTemplate);
             if (hasTemplates) {
-                this.log('🚀 Auto-downloading fingerprint templates (ISO/ANSI)...', 'info');
+                this.log(`🚀 Auto-downloading ${templateCount} optimized fingerprint templates (total: ${this.formatFileSize(totalTemplateSize)})...`, 'info');
                 this.downloadRightFourTemplates(); // Only download templates, not images
             } else {
                 this.log('⚠️ Fingers detected but templates not created. Check finger quality or service logs.', 'warning');
             }
         }
 
-        // Display individual finger details
+        // Display individual finger details with template sizes
         if (result.fingerTemplates && result.fingerTemplates.length > 0) {
             let detailsHtml = '<div style="margin-top: 5px; font-weight: bold;">Individual Fingers:</div>';
             
             result.fingerTemplates.forEach((finger, index) => {
                 const hasIso = finger.isoTemplate ? '✓' : '✗';
                 const hasAnsi = finger.ansiTemplate ? '✓' : '✗';
+                const isoSize = finger.isoTemplate ? this.formatFileSize(finger.isoTemplate.size) : 'N/A';
+                const ansiSize = finger.ansiTemplate ? this.formatFileSize(finger.ansiTemplate.size) : 'N/A';
+                
                 detailsHtml += `
                     <div style="margin: 3px 0; padding: 3px; background: rgba(0,0,0,0.05);">
                         <strong>${finger.fingerName}</strong> (Q: ${finger.quality})
-                        <br>ISO: ${hasIso} | ANSI: ${hasAnsi} | Pos: ${finger.x},${finger.y}
+                        <br>ISO: ${hasIso} (${isoSize}) | ANSI: ${hasAnsi} (${ansiSize})
+                        <br><small>Position: ${finger.x},${finger.y}</small>
                     </div>
                 `;
             });
+            
+            detailsHtml += `<div style="margin-top: 5px; font-weight: bold; color: #007bff;">
+                Total Templates: ${templateCount} files (${this.formatFileSize(totalTemplateSize)})
+            </div>`;
             
             this.rightFourFingersDetails.innerHTML = detailsHtml;
         } else {
@@ -1258,20 +1283,29 @@ class FingerprintPreview {
         this.currentRightFourTemplatesResult.fingerTemplates.forEach((finger, index) => {
             if (finger.isoTemplate) {
                 const filename = `${finger.fingerName}_ISO_template_${timestamp}.dat`;
+                const size = finger.isoTemplate.size || 1024;
                 this.downloadBinaryData(finger.isoTemplate.data, filename);
                 downloadCount++;
-                this.log(`📄 Downloaded ISO template: ${filename}`, 'success');
+                this.log(`📄 Downloaded ISO template: ${filename} (${this.formatFileSize(size)})`, 'success');
             }
             
             if (finger.ansiTemplate) {
                 const filename = `${finger.fingerName}_ANSI_template_${timestamp}.dat`;
+                const size = finger.ansiTemplate.size || 1024;
                 this.downloadBinaryData(finger.ansiTemplate.data, filename);
                 downloadCount++;
-                this.log(`📄 Downloaded ANSI template: ${filename}`, 'success');
+                this.log(`📄 Downloaded ANSI template: ${filename} (${this.formatFileSize(size)})`, 'success');
             }
         });
 
-        this.log(`Downloaded ${downloadCount} template files`, 'success');
+        // Calculate total size
+        let totalSize = 0;
+        this.currentRightFourTemplatesResult.fingerTemplates.forEach(finger => {
+            if (finger.isoTemplate) totalSize += finger.isoTemplate.size || 1024;
+            if (finger.ansiTemplate) totalSize += finger.ansiTemplate.size || 1024;
+        });
+
+        this.log(`✅ Downloaded ${downloadCount} optimized template files (total: ${this.formatFileSize(totalSize)})`, 'success');
     }
 
     downloadRightFourImages() {
@@ -1388,6 +1422,38 @@ class FingerprintPreview {
         this.fullRightFourFormat.textContent = hasIso && hasAnsi ? 'BOTH' : hasIso ? 'ISO' : hasAnsi ? 'ANSI' : 'None';
         this.fullRightFourQuality.textContent = result.overallQuality || 0;
         this.fullRightFourStatus.textContent = result.success ? 'Success' : 'Failed';
+        
+        // Calculate and display template sizes
+        let totalSize = 0;
+        let templateCount = 0;
+        if (hasIso) {
+            totalSize += result.isoTemplate.size || 1024;
+            templateCount++;
+        }
+        if (hasAnsi) {
+            totalSize += result.ansiTemplate.size || 1024;
+            templateCount++;
+        }
+        
+        // Update the status section with size information
+        if (result.success && templateCount > 0) {
+            const sizeInfo = document.createElement('div');
+            sizeInfo.style.marginTop = '5px';
+            sizeInfo.style.fontSize = '11px';
+            sizeInfo.style.color = '#007bff';
+            sizeInfo.innerHTML = `Templates: ${templateCount} files (${this.formatFileSize(totalSize)})`;
+            
+            // Find the full right four section and add size info
+            const fullSection = document.querySelector('.full-right-four-section');
+            const existingSizeInfo = fullSection?.querySelector('.size-info');
+            if (existingSizeInfo) {
+                existingSizeInfo.remove();
+            }
+            if (fullSection) {
+                sizeInfo.className = 'size-info';
+                fullSection.appendChild(sizeInfo);
+            }
+        }
     }
 
     downloadFullRightFourTemplate() {
@@ -1399,21 +1465,35 @@ class FingerprintPreview {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         let downloadCount = 0;
 
+        let totalSize = 0;
+        
         if (this.currentFullRightFourResult.isoTemplate) {
             const filename = `full_right_four_ISO_template_${timestamp}.dat`;
+            const size = this.currentFullRightFourResult.isoTemplate.size || 1024;
             this.downloadBinaryData(this.currentFullRightFourResult.isoTemplate.data, filename);
             downloadCount++;
-            this.log(`📄 Downloaded full ISO template: ${filename}`, 'success');
+            totalSize += size;
+            this.log(`📄 Downloaded full ISO template: ${filename} (${this.formatFileSize(size)})`, 'success');
         }
         
         if (this.currentFullRightFourResult.ansiTemplate) {
             const filename = `full_right_four_ANSI_template_${timestamp}.dat`;
+            const size = this.currentFullRightFourResult.ansiTemplate.size || 1024;
             this.downloadBinaryData(this.currentFullRightFourResult.ansiTemplate.data, filename);
             downloadCount++;
-            this.log(`📄 Downloaded full ANSI template: ${filename}`, 'success');
+            totalSize += size;
+            this.log(`📄 Downloaded full ANSI template: ${filename} (${this.formatFileSize(size)})`, 'success');
         }
 
-        this.log(`Downloaded ${downloadCount} full template files`, 'success');
+        this.log(`✅ Downloaded ${downloadCount} optimized full template files (total: ${this.formatFileSize(totalSize)})`, 'success');
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     log(message, type = 'info') {
