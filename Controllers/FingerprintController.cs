@@ -446,5 +446,49 @@ namespace FingerprintWebAPI.Controllers
                 return StatusCode(500, $"Error capturing full right four fingers template: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// NEW CUSTOM ENDPOINT: Capture left four fingers as ISO/ANSI templates (individual fingers)
+        /// This endpoint captures the left four fingers and creates templates in the specified format
+        /// </summary>
+        [HttpPost("capture/left-four-templates")]
+        public async Task<ActionResult<LeftFourFingersTemplateResponse>> CaptureLeftFourFingersTemplates([FromBody] LeftFourFingersTemplateRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Left four fingers template capture request: Format={Format}, {Width}x{Height} on channel {Channel}, MinQuality={MinQuality}", 
+                    request.Format, request.Width, request.Height, request.Channel, request.MinQuality);
+                
+                var result = await _fingerprintService.CaptureLeftFourFingersTemplatesAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing left four fingers templates");
+                return StatusCode(500, $"Error capturing left four fingers templates: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// NEW CUSTOM ENDPOINT: Capture full left four fingers as one combined template
+        /// This endpoint captures the left four fingers as a single combined template (no splitting)
+        /// </summary>
+        [HttpPost("capture/full-left-four")]
+        public async Task<ActionResult<FullLeftFourFingersResponse>> CaptureFullLeftFourFingers([FromBody] FullLeftFourFingersRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Full left four fingers template capture request: Format={Format}, {Width}x{Height} on channel {Channel}, MinQuality={MinQuality}", 
+                    request.Format, request.Width, request.Height, request.Channel, request.MinQuality);
+                
+                var result = await _fingerprintService.CaptureFullLeftFourFingersAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing full left four fingers template");
+                return StatusCode(500, $"Error capturing full left four fingers template: {ex.Message}");
+            }
+        }
     }
 }

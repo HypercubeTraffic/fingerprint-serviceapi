@@ -140,6 +140,14 @@ namespace FingerprintWebAPI.Hubs
                         await HandleCaptureFullRightFour(command);
                         break;
 
+                    case "capture_left_four_templates":
+                        await HandleCaptureLeftFourTemplates(command);
+                        break;
+
+                    case "capture_full_left_four":
+                        await HandleCaptureFullLeftFour(command);
+                        break;
+
                     default:
                         await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
                         {
@@ -668,6 +676,74 @@ namespace FingerprintWebAPI.Hubs
                 {
                     Type = "error",
                     Data = new { message = $"Error capturing full right four fingers template: {ex.Message}" }
+                });
+            }
+        }
+
+        // NEW LEFT FOUR ENDPOINT HANDLERS
+        private async Task HandleCaptureLeftFourTemplates(dynamic command)
+        {
+            try
+            {
+                var request = new LeftFourFingersTemplateRequest
+                {
+                    Format = command?.format ?? "BOTH",
+                    Channel = command?.channel ?? 0,
+                    Width = command?.width ?? 1600,
+                    Height = command?.height ?? 1500,
+                    SplitWidth = command?.splitWidth ?? 256,
+                    SplitHeight = command?.splitHeight ?? 360,
+                    MinQuality = command?.minQuality ?? 30
+                };
+
+                var result = await _fingerprintService.CaptureLeftFourFingersTemplatesAsync(request);
+
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "left_four_templates_result",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing left four fingers templates");
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "error",
+                    Data = new { message = $"Error capturing left four fingers templates: {ex.Message}" }
+                });
+            }
+        }
+
+        // NEW CUSTOM ENDPOINT HANDLER FOR FULL LEFT FOUR FINGERS
+        private async Task HandleCaptureFullLeftFour(dynamic command)
+        {
+            try
+            {
+                var request = new FullLeftFourFingersRequest
+                {
+                    Format = command?.format ?? "BOTH",
+                    Channel = command?.channel ?? 0,
+                    Width = command?.width ?? 1600,
+                    Height = command?.height ?? 1500,
+                    MinQuality = command?.minQuality ?? 30
+                };
+
+                var result = await _fingerprintService.CaptureFullLeftFourFingersAsync(request);
+
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "full_left_four_result",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error capturing full left four fingers template");
+                await Clients.Caller.SendAsync("ReceiveMessage", new WebSocketMessage
+                {
+                    Type = "error",
+                    Data = new { message = $"Error capturing full left four fingers template: {ex.Message}" }
                 });
             }
         }

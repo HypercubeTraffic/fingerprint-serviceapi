@@ -333,4 +333,85 @@ namespace FingerprintWebAPI.Models
         public int Height { get; set; } = 1500;
         public int MinQuality { get; set; } = 30;
     }
+
+    // NEW CUSTOM MODELS FOR LEFT FOUR FINGERS TEMPLATE CAPTURE
+    public class LeftFourFingersTemplateRequest
+    {
+        public string Format { get; set; } = "BOTH"; // ISO, ANSI, or BOTH
+        public int Channel { get; set; } = 0;
+        public int Width { get; set; } = 1600;
+        public int Height { get; set; } = 1500;
+        public int SplitWidth { get; set; } = 256;
+        public int SplitHeight { get; set; } = 360;
+        public int MinQuality { get; set; } = 30; // Minimum quality threshold for each finger
+    }
+
+    public class LeftFourFingersTemplateResponse
+    {
+        public bool Success { get; set; }
+        public int DetectedFingerCount { get; set; }
+        public string? Message { get; set; }
+        public List<LeftFingerTemplateData> FingerTemplates { get; set; } = new();
+        public string? ErrorDetails { get; set; }
+        public int OverallQuality { get; set; }
+        public string? ImageData { get; set; } // Full capture image
+    }
+
+    public class LeftFingerTemplateData
+    {
+        public string FingerName { get; set; } = string.Empty; // left_index, left_middle, left_ring, left_little
+        public int FingerIndex { get; set; } // 0=index, 1=middle, 2=ring, 3=little
+        public int Quality { get; set; }
+        public string? ImageData { get; set; } // Individual finger image
+        public TemplateData? IsoTemplate { get; set; }
+        public TemplateData? AnsiTemplate { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Top { get; set; }
+        public int Left { get; set; }
+        public int Angle { get; set; }
+    }
+
+    public class LeftFourFingersTemplateCommand
+    {
+        public string Command { get; set; } = "capture_left_four_templates";
+        public string Format { get; set; } = "BOTH";
+        public int Channel { get; set; } = 0;
+        public int Width { get; set; } = 1600;
+        public int Height { get; set; } = 1500;
+        public int SplitWidth { get; set; } = 256;
+        public int SplitHeight { get; set; } = 360;
+        public int MinQuality { get; set; } = 30;
+    }
+
+    // NEW: FULL LEFT FOUR FINGERS AS ONE TEMPLATE
+    public class FullLeftFourFingersRequest
+    {
+        public string Format { get; set; } = "BOTH"; // ISO, ANSI, or BOTH
+        public int Channel { get; set; } = 0;
+        public int Width { get; set; } = 1600;
+        public int Height { get; set; } = 1500;
+        public int MinQuality { get; set; } = 30;
+    }
+
+    public class FullLeftFourFingersResponse
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public int OverallQuality { get; set; }
+        public string? ImageData { get; set; } // Full capture image
+        public TemplateData? IsoTemplate { get; set; } // Combined template
+        public TemplateData? AnsiTemplate { get; set; } // Combined template
+        public string? ErrorDetails { get; set; }
+    }
+
+    public class FullLeftFourFingersCommand
+    {
+        public string Command { get; set; } = "capture_full_left_four";
+        public string Format { get; set; } = "BOTH";
+        public int Channel { get; set; } = 0;
+        public int Width { get; set; } = 1600;
+        public int Height { get; set; } = 1500;
+        public int MinQuality { get; set; } = 30;
+    }
 }
